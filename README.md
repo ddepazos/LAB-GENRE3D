@@ -1,6 +1,8 @@
 # LAB GENRE3D — LAB Motion 3D
 
-**Arquitectura y hoja de ruta actualizadas · 29 octubre 2026**
+**Arquitectura y hoja de ruta actualizadas · 30 octubre 2026**
+> **Estado verificado (30-10-2026):** Cloudflare Pages desplegó el commit `ea3f6da` correctamente. La interfaz incluye accesos directos a cabeza/rostro e importación GLB; las pruebas funcionales y el rigging avanzado siguen pendientes. [Informe técnico](docs/INFORME_ESTADO_2026-10-30.md).
+
 
 **Aplicación:** https://lab-genre3d.pages.dev/  
 **Repositorio exclusivo:** https://github.com/ddepazos/LAB-GENRE3D  
