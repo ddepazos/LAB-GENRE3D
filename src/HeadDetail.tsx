@@ -5,14 +5,14 @@ import * as THREE from "three";
  * Controls are real geometric transforms (jaw, eyes, brows), not skinning or morph targets.
  */
 export type HeadKind = "Humano" | "Robot" | "Maniquí" | "Criatura";
-export type FacePose = { jaw: number; brow: number; blink: number; gazeX: number; gazeY: number };
-export const neutralFace: FacePose = { jaw: 0, brow: 0, blink: 0, gazeX: 0, gazeY: 0 };
+export type FacePose = { jaw: number; brow: number; blink: number; gazeX: number; gazeY: number; smile: number; lipOpen: number; tongue: number; browLeft: number; browRight: number };
+export const neutralFace: FacePose = { jaw: 0, brow: 0, blink: 0, gazeX: 0, gazeY: 0, smile: 0, lipOpen: 0, tongue: 0, browLeft: 0, browRight: 0 };
 export const facePresets: Record<string, FacePose> = {
   Neutra: neutralFace,
-  Sorpresa: { jaw: 45, brow: 80, blink: 0, gazeX: 0, gazeY: 0 },
-  Enojo: { jaw: 12, brow: -75, blink: 20, gazeX: 0, gazeY: 0 },
-  Sonrisa: { jaw: 22, brow: 35, blink: 12, gazeX: 0, gazeY: 0 },
-  Sueño: { jaw: 0, brow: -20, blink: 95, gazeX: 0, gazeY: 0 }
+  Sorpresa: { jaw: 45, brow: 80, blink: 0, gazeX: 0, gazeY: 0, smile: 0, lipOpen: 0, tongue: 0, browLeft: 0, browRight: 0 },
+  Enojo: { jaw: 12, brow: -75, blink: 20, gazeX: 0, gazeY: 0, smile: 0, lipOpen: 0, tongue: 0, browLeft: 0, browRight: 0 },
+  Sonrisa: { jaw: 22, brow: 35, blink: 12, gazeX: 0, gazeY: 0, smile: 0, lipOpen: 0, tongue: 0, browLeft: 0, browRight: 0 },
+  Sueño: { jaw: 0, brow: -20, blink: 95, gazeX: 0, gazeY: 0, smile: 0, lipOpen: 0, tongue: 0, browLeft: 0, browRight: 0 }
 };
 const material = (color: string, roughness=.7, metalness=0) =>
   new THREE.MeshStandardMaterial({color, roughness, metalness});
@@ -33,15 +33,15 @@ function HeadDetail({kind,pose,onJawDrag}:{kind:HeadKind;pose:FacePose;onJawDrag
     <mesh material={shadow} position={[0,-.145,.292]} scale={[.225,.115,.045]}><sphereGeometry args={[1,24,12]}/></mesh>
     <group position={[0,-.16,.02]} rotation={[jawRad,0,0]}>
       <mesh material={main} position={[0,-.115,.095]} scale={[.26,.125,.275]}><sphereGeometry args={[1,32,20]}/></mesh>
-      <mesh material={mouth} position={[0,-.025,.29]} scale={[.20,.025,.016]}><sphereGeometry args={[1,24,12]}/></mesh>
-      {[-2,-1,0,1,2].map(i=><mesh key={i} material={tooth} position={[i*.065,-.02,.306]}><boxGeometry args={[.054,.055,.03]}/></mesh>)}
+      <mesh material={mouth} position={[0,-.025,.29]} scale={[.20+pose.smile*.0008,.025+pose.lipOpen*.00035,.016]}><sphereGeometry args={[1,24,12]}/></mesh>
+      <mesh position={[0,-.07,.323]} scale={[.075,.025+pose.tongue*.00035,.018]}><sphereGeometry args={[1,16,10]}/><meshStandardMaterial color="#bb6477" roughness={.8}/></mesh>{[-2,-1,0,1,2].map(i=><mesh key={i} material={tooth} position={[i*.065,-.02,.306]}><boxGeometry args={[.054,.055,.03]}/></mesh>)}
       <mesh material={main} position={[0,-.21,.26]} scale={[.17,.035,.055]}><sphereGeometry args={[1,24,12]}/></mesh>
     </group>
     {[-1,1].map(side=><group key={side}>
       <mesh material={shadow} position={[side*.175,.11,.293]} scale={[.13,.105,.042]}><sphereGeometry args={[1,24,16]}/></mesh>
       <mesh material={eye} position={[side*.175,.11,.323]} scale={[.105,.09*eyelidScale,.035]}><sphereGeometry args={[1,32,20]}/></mesh>
       <mesh material={iris} position={[side*.175+pose.gazeX*.0006,.11+pose.gazeY*.0006,.354]} scale={[.036,.041*eyelidScale,.014]}><sphereGeometry args={[1,20,12]}/></mesh>
-      <mesh material={shadow} position={[side*.175,.245+browOffset,.323]} rotation={[0,0,-side*(pose.brow/450)]} scale={[.15,.026,.037]}><boxGeometry args={[1,1,1]}/></mesh>
+      <mesh material={shadow} position={[side*.175,.245+browOffset+(side===-1?pose.browLeft:pose.browRight)/400,.323]} rotation={[0,0,-side*(pose.brow/450)]} scale={[.15,.026,.037]}><boxGeometry args={[1,1,1]}/></mesh>
       <mesh material={main} position={[side*.335,-.03,.01]} scale={[.07,.135,.085]}><sphereGeometry args={[1,20,16]}/></mesh>
     </group>)}
     <mesh material={main} position={[0,-.015,.35]} scale={[.078,.15,.11]}><sphereGeometry args={[1,24,16]}/></mesh>
