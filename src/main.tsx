@@ -1,3 +1,4 @@
+import {rigAnimationClip} from './rigAnimation';
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Canvas, ThreeEvent, createPortal, useThree } from "@react-three/fiber";
@@ -57,7 +58,7 @@ import {loadAsset,createProject,openProject,saveProjectBackup,readProjectBackup,
 function App(){
   const exportGroup=useRef<THREE.Group>(null);
   const [exportingGlb,setExportingGlb]=useState(false);
-  const exportGlb=async()=>{if(!exportGroup.current||exportingGlb)return;setExportingGlb(true);try{await exportToLabStudio(exportGroup.current,{name:"genre3d-scene",fps:30});}catch(error){alert("No se pudo exportar GLB: "+(error instanceof Error?error.message:String(error)));}finally{setExportingGlb(false)}};
+  const exportGlb=async()=>{if(!exportGroup.current||exportingGlb)return;setExportingGlb(true);try{await exportToLabStudio(exportGroup.current,{name:"genre3d-scene",fps:30,clips:assets.filter(a=>a.visible).flatMap(a=>{const clip=rigAnimationClip(a);return clip?[clip]:[]})});}catch(error){alert("No se pudo exportar GLB: "+(error instanceof Error?error.message:String(error)));}finally{setExportingGlb(false)}};
   const [blenderBusy,setBlenderBusy]=useState(false);
   const [blenderNotice,setBlenderNotice]=useState("");
   const [blenderOperation,setBlenderOperation]=useState<BlenderOperation>("smooth");
