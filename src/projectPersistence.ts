@@ -105,7 +105,7 @@ export async function openProject(blob:Blob):Promise<{items:Item[];assets:Import
 }
 function moduleState(value:unknown):ModuleState {
  if(value===undefined)return {};const v=record(value),result:ModuleState={};
- if(v.hand!==undefined){const hand=record(v.hand),angles=vector(hand.angles,5);if(angles.some(n=>n<0||n>95))fail('Ángulos de mano inválidos');result.hand={pose:name(hand.pose),angles:angles as HandSnapshot['angles']}}
+ if(v.hand!==undefined){const hand=record(v.hand),angles=vector(hand.angles,5);if(angles.some(n=>n<0||n>95))fail('Ángulos de mano inválidos');const keys=hand.keys===undefined?[]:array(hand.keys,241).map(value=>{const k=record(value),frame=id(k.frame),a=vector(k.value,5);if(frame>240||a.some(v=>v<0||v>95))fail('Keyframe de mano inválido');return {frame,value:a as HandSnapshot['angles']}});if(new Set(keys.map(k=>k.frame)).size!==keys.length)fail('Keyframe de mano duplicado');result.hand={pose:name(hand.pose),angles:angles as HandSnapshot['angles'],...(hand.keys!==undefined?{keys:keys.sort((a,b)=>a.frame-b.frame)}:{})}}
  if(v.character!==undefined){const c=record(v.character);
   if(!['Humano','Robot','Maniquí','Criatura'].includes(String(c.kind))||!['Reposo','Caminar','Correr','Saludar','Saltar'].includes(String(c.motion)))fail('Personaje incompatible');
   const speed=number(c.speed),faceFrame=id(c.faceFrame);if(speed<.2||speed>2||faceFrame>240)fail('Tiempo de personaje inválido');
