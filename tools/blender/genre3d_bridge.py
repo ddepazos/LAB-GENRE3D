@@ -8,6 +8,7 @@ import json
 import os
 import sys
 import bpy
+import bmesh
 
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -31,6 +32,19 @@ def main():
     if not meshes:
         raise ValueError("No mesh objects found in GLB")
     for obj in meshes:
+        if options.operation in ("subdivide", "decimate"):
+            if obj.data.shape_keys:
+                raise ValueError("Topology operations on morph targets require a separate editable mesh")
+            # glTF splits vertices at normal/UV seams; weld mesh vertices while
+            # retaining per-loop UV data before topology modifiers.
+            bm = bmesh.new()
+            try:
+                bm.from_mesh(obj.data)
+                bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-6)
+                bm.to_mesh(obj.data)
+                obj.data.update()
+            finally:
+                bm.free()
         if options.operation in ("smooth", "normals"):
             for poly in obj.data.polygons:
                 poly.use_smooth = True
