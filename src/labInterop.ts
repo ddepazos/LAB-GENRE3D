@@ -63,3 +63,14 @@ export async function exportToLabStudio(
   return manifest;
   } finally {hidden.forEach(({object,visible})=>{object.visible=visible})}
 }
+
+/** Serialize for Blender without downloading files or exporting editing guides. */
+export async function serializeSceneGlb(scene:THREE.Object3D):Promise<Blob> {
+  const hidden:{object:THREE.Object3D;visible:boolean}[]=[];
+  scene.traverse(object=>{if(object.userData.editorOnly||object.type==='TransformControls'){hidden.push({object,visible:object.visible});object.visible=false}});
+  try {
+    const data=await new GLTFExporter().parseAsync(scene,{binary:true,onlyVisible:true,trs:true});
+    if(!(data instanceof ArrayBuffer))throw new Error('No se pudo preparar la escena GLB');
+    return new Blob([data],{type:'model/gltf-binary'});
+  }finally{hidden.forEach(({object,visible})=>{object.visible=visible})}
+}
