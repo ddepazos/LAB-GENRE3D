@@ -6,7 +6,9 @@ import {GLTFExporter} from 'three/examples/jsm/exporters/GLTFExporter.js';
 globalThis.FileReader=class{readAsArrayBuffer(blob){blob.arrayBuffer().then(result=>{this.result=result;this.onloadend?.()})}};
 globalThis.ProgressEvent=class{constructor(type,init){this.type=type;Object.assign(this,init)}};
 const target=new URL('../.project-test.mjs',import.meta.url);
-writeFileSync(target,ts.transpileModule(readFileSync(new URL('../src/projectPersistence.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText);
+const meshDataTarget=new URL('../.mesh-data-test.mjs',import.meta.url);
+writeFileSync(meshDataTarget,ts.transpileModule(readFileSync(new URL('../src/meshData.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText);
+writeFileSync(target,ts.transpileModule(readFileSync(new URL('../src/projectPersistence.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText.replace(/from ['\"]\.\/meshData['\"]/g,"from './.mesh-data-test.mjs'"));
 try{
  const {loadAsset,createProject,openProject}=await import(target.href);
  const geometry=new THREE.BoxGeometry();const count=geometry.attributes.position.count;
@@ -33,12 +35,12 @@ try{
  assert.equal(a.morphs[0].mesh.material.color.getHexString(),asset.morphs[0].mesh.material.color.getHexString());
  const second=await openProject(createProject(reopened.items,reopened.assets,reopened.editor,reopened.modules));assert.equal(second.assets[0].sourceGlb,asset.sourceGlb);assert(Math.abs(second.assets[0].bones[1].rotation.z-.7)<1e-6);
  const old=await openProject(new Blob([JSON.stringify({application:'LAB GENRE3D',version:1,items:[item]})]));assert(old.legacy);assert.equal(old.assets.length,0);
- const valid=JSON.parse(await blob.text());
+ const valid=JSON.parse(await blob.text());assert.equal(valid.version,3);const v2=structuredClone(valid);v2.version=2;assert.equal((await openProject(new Blob([JSON.stringify(v2)]))).assets.length,1);
  for(const mutate of [v=>v.version=99,v=>v.items[0].position=[1,2],v=>v.items.push(v.items[0]),v=>v.assets[0].sourceGlb='not-base64!',v=>v.assets[0].nodes[0].path=[9999],v=>v.assets[0].rigKeys[0].bones=[],v=>v.editor.frame=900,v=>v.modules.hand.angles=[999,0,0,0,0]]){
   const broken=structuredClone(valid);mutate(broken);await assert.rejects(()=>openProject(new Blob([JSON.stringify(broken)])));
  }
  assert.deepEqual(asset.restRotations,rest,'failed imports never mutate original live asset');
  // Reject external references before GLTFLoader can request network resources.
  const json={asset:{version:'2.0'},buffers:[{byteLength:3,uri:'https://example.invalid/private.bin'}]};let raw=JSON.stringify(json);raw+=' '.repeat((4-raw.length%4)%4);const external=new ArrayBuffer(20+raw.length),view=new DataView(external);[0x46546c67,2,external.byteLength,raw.length,0x4e4f534a].forEach((v,i)=>view.setUint32(i*4,v,true));new Uint8Array(external,20).set(new TextEncoder().encode(raw));await assert.rejects(()=>loadAsset(external,'externo.glb',2),/enlaces externos/);
- console.log('PASS: v2 project roundtrip twice, edited geometry/UV/material, skinned rig, pose, morphs, original clips, rig keys, editor settings, hand/character/facial keyframes, legacy v1 and invalid files');
-}finally{unlinkSync(target)}
+ console.log('PASS: v3 project roundtrip twice, edited geometry/UV/material, skinned rig, pose, morphs, original clips, rig keys, editor settings, hand/character/facial keyframes, legacy v1 and invalid files');
+}finally{unlinkSync(target);unlinkSync(meshDataTarget)}

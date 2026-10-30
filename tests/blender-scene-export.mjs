@@ -10,7 +10,7 @@ try {
  const {serializeSceneGlb}=await import(target.href);
  const scene=new THREE.Group();const mesh=new THREE.Mesh(new THREE.BoxGeometry(),new THREE.MeshStandardMaterial());scene.add(mesh);
  const guide=mesh.clone();guide.userData={editorOnly:true};scene.add(guide);
- const controls=new THREE.Group();controls.type='TransformControls';controls.add(mesh.clone());scene.add(controls);
+ const controls=new THREE.Group();controls.isTransformControls=true;controls.add(mesh.clone());scene.add(controls);
  const blob=await serializeSceneGlb(scene),bytes=await blob.arrayBuffer();
  const view=new DataView(bytes);assert.equal(view.getUint32(0,true),0x46546c67);
  const doc=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,20,view.getUint32(12,true))));

@@ -32,7 +32,7 @@ export async function exportToLabStudio(
   const content = { meshes: 0, skinnedMeshes: 0, bones: 0, morphTargets: 0, materials: 0 };
   const materialIds = new Set<string>();
   const hidden: {object:THREE.Object3D;visible:boolean}[]=[];
-  scene.traverse(object=>{if(object.userData.editorOnly || object.type==='TransformControls'){hidden.push({object,visible:object.visible});object.visible=false}});
+  scene.traverse(object=>{if(object.userData.editorOnly || object.type==='TransformControls'||(object as THREE.Object3D&{isTransformControls?:boolean}).isTransformControls){hidden.push({object,visible:object.visible});object.visible=false}});
   const isVisible=(object:THREE.Object3D)=>{let node:THREE.Object3D|null=object;while(node){if(!node.visible)return false;node=node.parent}return true};
   try {
   scene.traverse((object) => {
@@ -67,7 +67,7 @@ export async function exportToLabStudio(
 /** Serialize for Blender without downloading files or exporting editing guides. */
 export async function serializeSceneGlb(scene:THREE.Object3D):Promise<Blob> {
   const hidden:{object:THREE.Object3D;visible:boolean}[]=[];
-  scene.traverse(object=>{if(object.userData.editorOnly||object.type==='TransformControls'){hidden.push({object,visible:object.visible});object.visible=false}});
+  scene.traverse(object=>{if(object.userData.editorOnly||object.type==='TransformControls'||(object as THREE.Object3D&{isTransformControls?:boolean}).isTransformControls){hidden.push({object,visible:object.visible});object.visible=false}});
   try {
     const data=await new GLTFExporter().parseAsync(scene,{binary:true,onlyVisible:true,trs:true});
     if(!(data instanceof ArrayBuffer))throw new Error('No se pudo preparar la escena GLB');

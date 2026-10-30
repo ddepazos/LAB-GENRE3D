@@ -3,7 +3,9 @@ import ts from 'typescript';
 import {readFileSync,writeFileSync,unlinkSync} from 'node:fs';
 import * as THREE from 'three';
 const target=new URL('../.mesh-test.mjs',import.meta.url);
-writeFileSync(target,ts.transpileModule(readFileSync(new URL('../src/EditableMesh.tsx',import.meta.url),'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText);
+const meshDataTarget=new URL('../.mesh-data-test.mjs',import.meta.url);
+writeFileSync(meshDataTarget,ts.transpileModule(readFileSync(new URL('../src/meshData.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText);
+writeFileSync(target,ts.transpileModule(readFileSync(new URL('../src/EditableMesh.tsx',import.meta.url),'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText.replace(/from ['\"]\.\/meshData['\"]/g,"from './.mesh-data-test.mjs'"));
 try {
  const {geometryData,faceOperation,bevelEdge}=await import(target.href);
  const source=geometryData(new THREE.BoxGeometry(1.5,1.5,1.5));
@@ -36,4 +38,4 @@ try {
  assert.equal(faceOperation(source,0,.2).uvs.length,faceOperation(source,0,.2).positions.length/3*2);
  console.log('PASS: supporting-edge bevel closure, volume, UVs and invalid width');
  console.log('PASS: primitive conversion, extrusion, inset, face bevel, immutability, normals and invalid selection');
-}finally{unlinkSync(target)}
+}finally{unlinkSync(target);unlinkSync(meshDataTarget)}

@@ -2,18 +2,18 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type {HandSnapshot} from './HandLab';
 import type {CharacterSnapshot} from './CharacterLab';
-import type {MeshData} from './EditableMesh';
+import {type MeshData,geometryData,setMeshData} from './meshData';
 import type {MaterialPreset} from './materialPresets';
 export type Vec3=[number,number,number];
 export type Shape='box'|'sphere'|'torus'|'cone'|'cylinder';
 export type Item={id:number;name:string;shape:Shape;color:string;visible:boolean;position:Vec3;rotation:Vec3;scale:Vec3;metalness?:number;roughness?:number;wireframe?:boolean;flatShading?:boolean;segments?:number;meshOffset?:Vec3;preset?:MaterialPreset;geometry?:MeshData};
 export type RigKey={frame:number;bones:number[][];morphs:number[]};
 export type ImportedAsset={id:number;name:string;object:THREE.Group;sourceGlb:string;clips:THREE.AnimationClip[];visible:boolean;position:Vec3;rotation:Vec3;scale:Vec3;morphCount:number;boneCount:number;morphs:{name:string;mesh:THREE.Mesh;index:number}[];bones:THREE.Bone[];restRotations:Vec3[];rigKeys:RigKey[]};
-type NodeState={path:number[];position:Vec3;quaternion:[number,number,number,number];scale:Vec3;visible:boolean;morphs?:number[]};
+type NodeState={path:number[];position:Vec3;quaternion:[number,number,number,number];scale:Vec3;visible:boolean;morphs?:number[];geometry?:MeshData};
 type SavedAsset=Pick<ImportedAsset,'id'|'name'|'sourceGlb'|'visible'|'position'|'rotation'|'scale'|'restRotations'|'rigKeys'>&{nodes:NodeState[]};
 export type EditorState={frame:number;showGrid:boolean;transparent:boolean;rigLoop:boolean;timelineOpen:boolean;selected:number|null;selectedAsset:number|null};
 export type ModuleState={hand?:HandSnapshot;character?:CharacterSnapshot};
-export type ProjectFile={application:'LAB GENRE3D';version:2;items:Item[];assets:SavedAsset[];editor:EditorState;modules?:ModuleState};
+export type ProjectFile={application:'LAB GENRE3D';version:3;items:Item[];assets:SavedAsset[];editor:EditorState;modules?:ModuleState};
 export const MAX_PROJECT_BYTES=128*1024*1024;
 const MAX_GLB_BYTES=40*1024*1024;
 const defaults:EditorState={frame:0,showGrid:true,transparent:false,rigLoop:true,timelineOpen:true,selected:null,selectedAsset:null};
@@ -36,7 +36,14 @@ function item(value:unknown):Item{
  if(v.segments!==undefined){const n=id(v.segments);if(n<3||n>64)fail('Resolución geométrica inválida');result.segments=n}
  if(v.meshOffset!==undefined)result.meshOffset=vec3(v.meshOffset);
  if(v.preset!==undefined){if(!['liso','piel','hueso','metal','piedra','madera','escamas'].includes(String(v.preset)))fail('Material procedural incompatible');result.preset=v.preset as MaterialPreset}
- if(v.geometry!==undefined){const g=record(v.geometry),positions=array(g.positions,6000000).map(number);if(!positions.length||positions.length%9)fail('Malla triangular inválida');result.geometry={positions};if(g.uvs!==undefined){const uvs=array(g.uvs,4000000).map(number);if(uvs.length!==positions.length/3*2)fail('UV incompatibles con la malla');result.geometry.uvs=uvs}}
+ if(v.geometry!==undefined)result.geometry=meshValue(v.geometry);
+ return result;
+}
+function meshValue(value:unknown):MeshData {
+ const g=record(value),positions=array(g.positions,6000000).map(number);if(!positions.length||positions.length%9)fail('Malla triangular inválida');const result:MeshData={positions};
+ if(g.uvs!==undefined){const uvs=array(g.uvs,4000000).map(number);if(uvs.length!==positions.length/3*2)fail('UV incompatibles con la malla');result.uvs=uvs}
+ if(g.attributes!==undefined){result.attributes={};for(const [name,value] of Object.entries(record(g.attributes))){if(!['color','uv1','uv2'].includes(name))fail('Atributo de malla incompatible');const a=record(value),itemSize=id(a.itemSize);if(name==='color'?![3,4].includes(itemSize):itemSize!==2)fail('Dimensión de atributo inválida');const values=array(a.values,8000000).map(number);if(values.length!==positions.length/3*itemSize)fail('Atributo incompleto');result.attributes[name]={itemSize,values}}}
+ if(g.groups!==undefined)result.groups=array(g.groups,100000).map(value=>{const g=record(value),start=id(g.start),count=id(g.count),materialIndex=id(g.materialIndex);if(start%3||count%3||start+count>positions.length/3)fail('Grupo de material inválido');return {start,count,materialIndex}});
  return result;
 }
 export function encodeGlb(buffer:ArrayBuffer):string {
@@ -60,19 +67,19 @@ export async function loadAsset(buffer:ArrayBuffer,name:string,assetId:number):P
  gltf.scene.traverse(node=>{if((node as THREE.Bone).isBone)bones.push(node as THREE.Bone);if((node as THREE.Mesh).isMesh){const mesh=node as THREE.Mesh;for(const [name,index] of Object.entries(mesh.morphTargetDictionary??{}))morphs.push({name,mesh,index})}});
  return {id:assetId,name,object:gltf.scene,sourceGlb:encodeGlb(buffer),clips:gltf.animations,visible:true,position:[0,0,0],rotation:[0,0,0],scale:[1,1,1],bones,morphs,boneCount:bones.length,morphCount:morphs.length,restRotations:bones.map(b=>[b.rotation.x,b.rotation.y,b.rotation.z]),rigKeys:[]};
 }
-function walk(root:THREE.Object3D,callback:(node:THREE.Object3D,path:number[])=>void,path:number[]=[]){callback(root,path);root.children.forEach((node,index)=>walk(node,callback,[...path,index]))}
+function walk(root:THREE.Object3D,callback:(node:THREE.Object3D,path:number[])=>void,path:number[]=[]){if(root.userData.editorOnly)return;callback(root,path);root.children.forEach((node,index)=>walk(node,callback,[...path,index]))}
 function snapshot(asset:ImportedAsset):SavedAsset{
- const nodes:NodeState[]=[];walk(asset.object,(node,path)=>{const mesh=node as THREE.Mesh;nodes.push({path,position:node.position.toArray() as Vec3,quaternion:node.quaternion.toArray(),scale:node.scale.toArray() as Vec3,visible:node.visible,...(mesh.morphTargetInfluences?{morphs:[...mesh.morphTargetInfluences]}:{})})});
+ const nodes:NodeState[]=[];walk(asset.object,(node,path)=>{const mesh=node as THREE.Mesh;nodes.push({path,position:node.position.toArray() as Vec3,quaternion:node.quaternion.toArray(),scale:node.scale.toArray() as Vec3,visible:node.visible,...(mesh.isMesh&&mesh.geometry.userData.genre3dEdited?{geometry:geometryData(mesh.geometry)}:{}),...(mesh.morphTargetInfluences?{morphs:[...mesh.morphTargetInfluences]}:{})})});
  return {id:asset.id,name:asset.name,sourceGlb:asset.sourceGlb,position:[...asset.position],rotation:[...asset.rotation],scale:[...asset.scale],visible:asset.visible,restRotations:asset.restRotations.map(v=>[...v]),rigKeys:structuredClone(asset.rigKeys),nodes};
 }
 export function createProject(items:Item[],assets:ImportedAsset[],editor:EditorState,modules:ModuleState={}):Blob {
- const file:ProjectFile={application:'LAB GENRE3D',version:2,items:items.map(item),assets:assets.map(snapshot),editor:{...editor},modules:structuredClone(modules)};
+ const file:ProjectFile={application:'LAB GENRE3D',version:3,items:items.map(item),assets:assets.map(snapshot),editor:{...editor},modules:structuredClone(modules)};
  const blob=new Blob([JSON.stringify(file)],{type:'application/json'});if(blob.size>MAX_PROJECT_BYTES)fail('El proyecto supera 128 MB');return blob;
 }
 export async function openProject(blob:Blob):Promise<{items:Item[];assets:ImportedAsset[];editor:EditorState;legacy:boolean;modules:ModuleState}>{
  if(blob.size>MAX_PROJECT_BYTES)fail('El proyecto supera 128 MB');
  const file=record(JSON.parse(await blob.text()));
- if(file.application!=='LAB GENRE3D'||![1,2].includes(file.version as number))fail('No es un proyecto compatible de GENRE3D');
+ if(file.application!=='LAB GENRE3D'||![1,2,3].includes(file.version as number))fail('No es un proyecto compatible de GENRE3D');
  const items=array(file.items,2000).map(item);uniqueIds(items);
  if(file.version===1)return {items,assets:[],editor:{...defaults},legacy:true,modules:{}};
  const saved=array(file.assets,200),assets:ImportedAsset[]=[];
@@ -83,6 +90,7 @@ export async function openProject(blob:Blob):Promise<{items:Item[];assets:Import
   const nodes=array(v.nodes,100000);const paths=new Set<string>();let nodeCount=0;walk(asset.object,()=>nodeCount++);if(nodes.length!==nodeCount)fail('La jerarquía guardada no coincide con el GLB');
   for(const value of nodes){const state=record(value),path=array(state.path,256).map(id);const key=path.join('/');if(paths.has(key))fail('Nodo duplicado');paths.add(key);let node:THREE.Object3D=asset.object;for(const i of path){if(!node.children[i])fail('Ruta de nodo inválida');node=node.children[i]}
    node.position.fromArray(vec3(state.position));const q=vector(state.quaternion,4);if(Math.abs(new THREE.Quaternion().fromArray(q).length()-1)>.001)fail('Rotación de nodo inválida');node.quaternion.fromArray(q);node.scale.fromArray(vec3(state.scale));node.visible=bool(state.visible);
+   if(state.geometry!==undefined){if(!(node as THREE.Mesh).isMesh)fail('El nodo no es una malla');const data=meshValue(state.geometry),mesh=node as THREE.Mesh;const materials=Array.isArray(mesh.material)?mesh.material:null;if(materials&&data.groups?.some(g=>g.materialIndex>=materials.length))fail('Material de submalla inválido');setMeshData(mesh,data)}
    const morphs=(node as THREE.Mesh).morphTargetInfluences;if(morphs){const values=array(state.morphs,morphs.length).map(number);if(values.length!==morphs.length)fail('Expresiones incompatibles');values.forEach((v,i)=>{morphs[i]=v})}else if(state.morphs!==undefined)fail('El nodo no tiene expresiones');
   }
   asset.restRotations=array(v.restRotations,asset.bones.length).map(vec3);if(asset.restRotations.length!==asset.bones.length)fail('Pose de reposo incompatible');
