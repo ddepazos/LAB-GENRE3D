@@ -4,12 +4,10 @@ import { Brush, Evaluator, ADDITION, SUBTRACTION, INTERSECTION } from "three-bvh
 
 /** Enable BVH acceleration without changing existing editor meshes or their materials. */
 export function enableMeshAcceleration(): void {
-  const proto = THREE.BufferGeometry.prototype as THREE.BufferGeometry & {
-    computeBoundsTree?: typeof computeBoundsTree;
-    disposeBoundsTree?: typeof disposeBoundsTree;
-  };
-  if (!proto.computeBoundsTree) proto.computeBoundsTree = computeBoundsTree;
-  if (!proto.disposeBoundsTree) proto.disposeBoundsTree = disposeBoundsTree;
+  // Use runtime registration to avoid conflicting Three.js/BVH declaration merging.
+  const proto = THREE.BufferGeometry.prototype;
+  if (!("computeBoundsTree" in proto)) Object.defineProperty(proto, "computeBoundsTree", { value: computeBoundsTree, writable: true, configurable: true });
+  if (!("disposeBoundsTree" in proto)) Object.defineProperty(proto, "disposeBoundsTree", { value: disposeBoundsTree, writable: true, configurable: true });
   if (THREE.Mesh.prototype.raycast !== acceleratedRaycast) THREE.Mesh.prototype.raycast = acceleratedRaycast;
 }
 
