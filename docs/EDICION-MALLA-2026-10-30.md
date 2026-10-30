@@ -15,3 +15,20 @@ Base: main a3573ca. Se conservan importación GLB, controles de huesos/morphs y 
 
 ## Limitaciones pendientes
 Edición de submallas GLB, bisel de aristas, selección múltiple, pesos/IK, clips de animación GLB y serialización de importados siguen pendientes. El mapa UV de primitivas editables requiere conservación explícita; no afirmar materiales texturizados verificados en estas mallas. Probar cada modo de selección/arrastre, operaciones, deshacer, JSON, rig y reproducción en producción antes de darlo por terminado.
+
+## Publicación y resultado de esta etapa
+- GitHub: cambios publicados directamente sobre `main`, commit `3ddc93682d794d280cdd5a305b6ecce140216af4`, padre `a3573ca`. Sin ramas nuevas ni sobrescritura de cambios recientes.
+- Cloudflare: despliegue `52fe62f3-cabb-4623-aefa-b7370f932e3b`, commit coincidente, etapa `deploy`, estado `success`, terminado 2026-10-30 04:44:00 UTC (01:44 Chile).
+- URL de producción: https://lab-genre3d.pages.dev/ . URL inmutable: https://52fe62f3.lab-genre3d.pages.dev .
+- Bloqueo de navegador: la pestaña separada de QA devuelve `Debugger unattached` al leer DOM y al intentar recargar/usar DOM CUA. Se consultó la guía de recuperación y se obtuvo una referencia fresca a la pestaña; persiste el bloqueo. No se sustituye por pruebas simuladas ni se continúa en bucle. No hay capturas de las funciones nuevas verificadas.
+
+| Prueba nueva | Resultado |
+| --- | --- |
+| Conversión a triángulos, extrusión, inset, bisel de cara | Aprobada en prueba automática de geometría; UI pendiente |
+| Selección/arrastre de vértice, arista, cara | Bloqueada por conexión del navegador; pendiente |
+| Deshacer y persistencia JSON de geometría | Implementada; prueba UI pendiente |
+| Controles GLB y visualización de huesos | Implementados/conservados; prueba UI pendiente |
+| Interpolación quaternion, reproducción, pausa, repetir | Compilan; prueba con rig GLB pendiente |
+| Compilación de producción | Aprobada localmente y despliegue Cloudflare exitoso |
+
+No considerar esta etapa una finalización del modelador completo. Reanudar por las filas pendientes, sin repetir las pruebas automáticas aprobadas salvo cambios que las afecten.
