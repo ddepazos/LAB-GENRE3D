@@ -62,3 +62,19 @@ Publicación confirmada por API Cloudflare:
 Se añade limpieza de selección al cambiar la cantidad de vértices (extrusión/bisel/deshacer) y filtrado de índices inválidos para evitar marcadores NaN al volver a una topología anterior. No afecta las operaciones geométricas ya aprobadas. Build final correcto.
 
 La reconexión posterior a recargar volvió a fallar; no continuar repitiendo pruebas aprobadas. Reanudar con arrastre tras portal, descarga/recarga JSON, exportación limpia y GLB riggeado. El bisel sigue limitado a aristas convexas de soporte; no se ha implementado IK/FK, pesos ni edición skinned.
+
+
+### Validación posterior recuperada — resultado definitivo del arrastre
+Se recuperó la conexión sin repetir el bisel ni el inset ya aprobados. Pruebas sobre la corrección de portal `975c757` en la URL de producción:
+
+| Prueba | Resultado |
+| --- | --- |
+| Arrastrar vértice con eje X | Aprobada: esquina inferior desplazada, deformación visible; posición del objeto continúa 0,1,0. Captura `evidencias/arrastre-vertice.jpg` |
+| Arrastrar arista con eje X | Aprobada: ambos extremos se desplazan, malla cambia sin mover el objeto. Captura `evidencias/arrastre-arista.jpg` |
+| Arrastrar cara con eje X | Aprobada: sus tres esquinas se desplazan y deforman las caras vecinas. Captura `evidencias/arrastre-cara.jpg` |
+| Consola durante esta validación | Consulta de nivel error: sin entradas |
+
+La mención de arrastre pendiente en el registro anterior queda resuelta por estas pruebas. Siguen pendientes descarga/recarga JSON, exportación GLB limpia comprobada con archivo e importación de un rig conocido para probar huesos/morphs/reproducción; tampoco hay edición skinned ni IK/pesos.
+
+Cloudflare confirmó también `862d70ac50cb2f4fb94fd8a07b205922b4d57fc0`, despliegue `168cd267-b89b-4d97-9579-e17ca47effd5`, etapa deploy success. Las pruebas geométricas automáticas no se repiten después de cambios exclusivos de selección/documentación.
+
