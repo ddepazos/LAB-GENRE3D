@@ -31,7 +31,12 @@ export async function exportToLabStudio(
   const clips = options.clips ?? [];
   const content = { meshes: 0, skinnedMeshes: 0, bones: 0, morphTargets: 0, materials: 0 };
   const materialIds = new Set<string>();
+  const hidden: {object:THREE.Object3D;visible:boolean}[]=[];
+  scene.traverse(object=>{if(object.userData.editorOnly || object.type==='TransformControls'){hidden.push({object,visible:object.visible});object.visible=false}});
+  const isVisible=(object:THREE.Object3D)=>{let node:THREE.Object3D|null=object;while(node){if(!node.visible)return false;node=node.parent}return true};
+  try {
   scene.traverse((object) => {
+    if(!isVisible(object))return;
     if ((object as THREE.Mesh).isMesh) {
       const mesh = object as THREE.Mesh;
       content.meshes++;
@@ -56,4 +61,5 @@ export async function exportToLabStudio(
   saveBlob(new Blob([binary], { type: "model/gltf-binary" }), file);
   saveBlob(new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" }), name + ".lab.json");
   return manifest;
+  } finally {hidden.forEach(({object,visible})=>{object.visible=visible})}
 }

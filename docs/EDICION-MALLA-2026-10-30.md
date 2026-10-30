@@ -32,3 +32,11 @@ Edición de submallas GLB, bisel de aristas, selección múltiple, pesos/IK, cli
 | Compilación de producción | Aprobada localmente y despliegue Cloudflare exitoso |
 
 No considerar esta etapa una finalización del modelador completo. Reanudar por las filas pendientes, sin repetir las pruebas automáticas aprobadas salvo cambios que las afecten.
+
+## Segunda etapa — recuperación del navegador y bisel de aristas
+- Conexión de navegador recuperada. Se probó selección de vértice y se detectó que el arrastre movía el contenedor de Drei pero se leía el hijo; corregido con `object={ref}` en controles de componente, primitiva y GLB. La prueba anterior de arrastre no se considera aprobada.
+- Extrusión triangular comprobada visualmente en la primera versión publicada. Pendiente repetir solo lo afectado por las correcciones.
+- Bisel plano de arista convexa: recorta por el plano bisector, triangula el cierre y conserva UV interpolados; ancho ajustable. Rechaza diagonales coplanares, aristas abiertas, concavidad sin soporte y anchuras inválidas. No es bisel redondeado multisegmento.
+- Marcadores de esquinas seleccionadas y número de cara/arista/triángulos en interfaz. Centro de selección calculado con posiciones únicas.
+- UV conservados en conversión, extrusión/inset y arrastre. Material de la primitiva conservado en modo componentes. Exportación omite guías y TransformControls y restaura su visibilidad incluso si falla.
+- Pruebas automáticas afectadas: correctas; se añadieron cierre de aristas (cada borde aparece dos veces), volumen positivo y menor al original, longitud UV y anchos inválidos. TypeScript/Vite: correctos.
