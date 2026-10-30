@@ -5,7 +5,7 @@ export async function processGlbRemotely(file: Blob, operation: BlenderOperation
   const header=new DataView(await file.slice(0,12).arrayBuffer());
   if(header.getUint32(0,true)!==0x46546c67||header.getUint32(4,true)!==2||header.getUint32(8,true)!==file.size)throw new Error('El archivo no es un GLB 2.0 válido.');
   const response = await fetch('/api/blender/process', {method:'POST',headers:{'Content-Type':'model/gltf-binary','X-Genre3D-Operation':operation},credentials:'same-origin',body:file,signal:AbortSignal.timeout(115000)});
-  if(!response.ok){const payload=await response.json().catch(()=>({error:''}));throw new Error(messages[payload.error]??('Blender remoto: '+response.status))}
+  if(!response.ok){const payload=await response.json().catch(()=>({error:''}));if(payload.detail)console.error('Blender gateway:',payload.detail);throw new Error(messages[payload.error]??('Blender remoto: '+response.status))}
   const output=await response.blob();
   if(output.size<12||output.size>40*1024*1024)throw new Error('Blender devolvió un archivo vacío o demasiado grande.');
   const result=new DataView(await output.slice(0,12).arrayBuffer());

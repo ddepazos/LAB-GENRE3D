@@ -47,9 +47,9 @@ export default {
     try {
       const destination=new URL('/api/process',env.GENRE3D_RENDER_URL);
       if(destination.protocol!=='https:')return error(503,'invalid_backend_configuration');
-      const response=await fetch(destination,{method:'POST',headers:{Authorization:'Bearer '+env.GENRE3D_INTERNAL_TOKEN,'Content-Type':'model/gltf-binary','X-Genre3D-Operation':operation},body:bytes,signal:AbortSignal.timeout(100000),redirect:'error'});
+      const response=await fetch(destination,{method:'POST',headers:{Authorization:'Bearer '+env.GENRE3D_INTERNAL_TOKEN,'Content-Type':'model/gltf-binary','X-Genre3D-Operation':operation},body:bytes,signal:AbortSignal.timeout(100000),redirect:'manual'});
       if(!response.ok)return error([401,403].includes(response.status)?502:response.status,'backend_processing_failed');
       return new Response(response.body,{headers:{'Content-Type':'model/gltf-binary','Content-Disposition':'attachment; filename="genre3d-processed.glb"','Cache-Control':'no-store'}});
-    }catch(e){return error(e?.name==='TimeoutError'?504:502,'backend_unavailable')}
+    }catch(e){return Response.json({error:'backend_unavailable',detail:String(e?.message||e).slice(0,300)},{status:e?.name==='TimeoutError'?504:502,headers:{'Cache-Control':'no-store'}})}
   }
 };
