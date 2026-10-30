@@ -40,3 +40,25 @@ No considerar esta etapa una finalización del modelador completo. Reanudar por 
 - Marcadores de esquinas seleccionadas y número de cara/arista/triángulos en interfaz. Centro de selección calculado con posiciones únicas.
 - UV conservados en conversión, extrusión/inset y arrastre. Material de la primitiva conservado en modo componentes. Exportación omite guías y TransformControls y restaura su visibilidad incluso si falla.
 - Pruebas automáticas afectadas: correctas; se añadieron cierre de aristas (cada borde aparece dos veces), volumen positivo y menor al original, longitud UV y anchos inválidos. TypeScript/Vite: correctos.
+
+### Resultados de navegador — segunda etapa
+Pruebas en `https://lab-genre3d.pages.dev/`, commit `b7cee62`:
+
+| Función | Resultado y evidencia |
+| --- | --- |
+| Selección de componentes | Los modos Vértices, Aristas y Caras se activan; se muestran marcadores y cara seleccionada |
+| Bisel de arista | Aprobado: clic sobre borde izquierdo del cubo, ancho 0.2, botón Biselar; mensaje «Bisel plano aplicado», 12 → 22 triángulos. Captura `evidencias/bisel-arista.png` |
+| Deshacer bisel | Aprobado: 22 → 12 triángulos |
+| Inset de cara | Aprobado: clic sobre cara triangular y botón Inset; 12 → 18 triángulos |
+| Arrastre de componentes | Detectado desfase de gizmo bajo padre transformado. Corregido en `975c757`: controles mediante portal en raíz de escena y objetivo local explícito. Compila; validación final pendiente por caída de conexión al recargar |
+| Guardar JSON | Se pulsa Guardar JSON; el capturador del navegador no recibe evento download en 10 s. No se aprueba persistencia completa ni se atribuye la causa sin evidencia |
+| Exportación GLB sin guías | Exclusión incorporada y compila; archivo final no verificado |
+| Rig importado / reproducción | Pendiente prueba con GLB riggeado; no se infiere aprobación |
+
+Publicación confirmada por API Cloudflare:
+- `b7cee6203d2cc89711cee01fd4d3f068303fa114`: despliegue `548a7438-e8b6-4508-88ea-b53d09e704aa`, deploy success.
+- `975c7579f85579c35ec02b5ac338d4950c6bccf1`: despliegue `c2f00076-08d8-428b-b808-65ed01ebc4e6`, deploy success.
+
+Se añade limpieza de selección al cambiar la cantidad de vértices (extrusión/bisel/deshacer) y filtrado de índices inválidos para evitar marcadores NaN al volver a una topología anterior. No afecta las operaciones geométricas ya aprobadas. Build final correcto.
+
+La reconexión posterior a recargar volvió a fallar; no continuar repitiendo pruebas aprobadas. Reanudar con arrastre tras portal, descarga/recarga JSON, exportación limpia y GLB riggeado. El bisel sigue limitado a aristas convexas de soporte; no se ha implementado IK/FK, pesos ni edición skinned.

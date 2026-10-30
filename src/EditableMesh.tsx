@@ -51,8 +51,8 @@ export function EditableMesh({data,mode,onChange,onFace,onEdge}:{data:MeshData;m
  const [indices,setIndices]=useState<number[]>([]);
  const geometry=useMemo(()=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(data.positions,3));g.computeVertexNormals();g.computeBoundingSphere();return g},[data]);
  React.useEffect(()=>()=>geometry.dispose(),[geometry]);
- React.useEffect(()=>setIndices([]),[mode]);
- const unique=indices.filter((i,k)=>!indices.slice(0,k).some(j=>new THREE.Vector3().fromArray(data.positions,i*3).distanceToSquared(new THREE.Vector3().fromArray(data.positions,j*3))<1e-12));
+ React.useEffect(()=>setIndices([]),[mode,data.positions.length]);
+ const unique=indices.filter((i,k)=>i*3+2<data.positions.length&&!indices.slice(0,k).some(j=>new THREE.Vector3().fromArray(data.positions,i*3).distanceToSquared(new THREE.Vector3().fromArray(data.positions,j*3))<1e-12));
  const center=new THREE.Vector3();unique.forEach(i=>center.add(new THREE.Vector3().fromArray(data.positions,i*3)));if(unique.length)center.divideScalar(unique.length);
  const pick=(e:ThreeEvent<MouseEvent>)=>{e.stopPropagation();const face=e.faceIndex;if(face==null)return;onFace(face);const ids=[face*3,face*3+1,face*3+2];const local=ref.current!.worldToLocal(e.point.clone());
  let chosen=ids;
