@@ -24,7 +24,7 @@ function saveBlob(blob: Blob, filename: string) {
 }
 export async function exportToLabStudio(
   scene: THREE.Object3D,
-  options: { name?: string; fps?: number; clips?: THREE.AnimationClip[] } = {}
+  options: { name?: string; fps?: number; clips?: THREE.AnimationClip[]; onReady?: (files:{glb:Blob;manifest:Blob;name:string})=>void } = {}
 ): Promise<LabAssetManifest> {
   const name = (options.name ?? "genre3d-asset").replace(/[^a-z0-9_-]/gi, "-");
   const file = name + ".glb";
@@ -58,8 +58,10 @@ export async function exportToLabStudio(
     animation: { fps: options.fps ?? 30, clipNames: clips.map((c) => c.name), durationSeconds: Math.max(0, ...clips.map((c) => c.duration)) },
     content, createdAt: new Date().toISOString()
   };
-  saveBlob(new Blob([binary], { type: "model/gltf-binary" }), file);
-  saveBlob(new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" }), name + ".lab.json");
+  const glbBlob=new Blob([binary],{type:"model/gltf-binary"});
+  const manifestBlob=new Blob([JSON.stringify(manifest,null,2)],{type:"application/json"});
+  if(options.onReady)options.onReady({glb:glbBlob,manifest:manifestBlob,name});
+  else {saveBlob(glbBlob,file);saveBlob(manifestBlob,name+".lab.json")};
   return manifest;
   } finally {hidden.forEach(({object,visible})=>{object.visible=visible})}
 }
