@@ -55,14 +55,15 @@ class Handler(BaseHTTPRequestHandler):
                 source = Path(folder) / "input.glb"
                 target = Path(folder) / "output.glb"
                 source.write_bytes(payload)
-                cmd = ["blender", "--background", "--factory-startup", "--python-exit-code", "1",
+                cmd = ["blender", "--threads", "1", "--background", "--factory-startup", "--python-exit-code", "1",
                        "--python", "/app/genre3d_bridge.py", "--", "--input", str(source),
                        "--output", str(target), "--operation", operation]
                 try:
-                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT_SECONDS, check=False)
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT_SECONDS, check=False, env={**os.environ,"OMP_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1"})
                 except subprocess.TimeoutExpired:
                     return self.respond(504, {"error": "processing_timeout"})
                 if result.returncode != 0 or not target.is_file():
+                    print(json.dumps({"event":"blender_failed","operation":operation,"exit_code":result.returncode,"stderr":result.stderr[-3000:],"stdout":result.stdout[-3000:]}),flush=True)
                     return self.respond(422, {"error": "blender_processing_failed"})
                 output = target.read_bytes()
                 if len(output) > 40 * 1024 * 1024:
