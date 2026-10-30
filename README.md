@@ -57,3 +57,16 @@ MVP: GLB/glTF animado y secuencia PNG RGBA transparente. Verificar reimportació
 
 ## Política de cambios
 Trabajar exclusivamente en `ddepazos/LAB-GENRE3D`; no crear ramas nuevas ni tocar `ddepazos/lab`. Validar compilación y funcionamiento antes de producción. Documentar cada cambio y no confundir diseño, implementación y despliegue.
+
+## Manipulación directa de mallas en viewport — requisito prioritario
+**No sustituir por sliders:** todos los objetos, mallas y controladores de rig deben poder seleccionarse y editarse con el mouse en el viewport existente.
+
+- **Modo Objeto:** raycasting, selección visible, gizmos de mover/rotar/escalar, arrastre con mouse, pivot local/global, snapping, ejes X/Y/Z y multiselección.
+- **Modo Vértice:** selección de vértices individuales o grupos, box/lasso selection, movimiento interactivo, edición simétrica opcional y actualización de posiciones/normales/bounds de `BufferGeometry`.
+- **Modo Arista y Cara:** selección indexada con mapeo triángulo→cara lógica, extrusión, inset, bevel, subdivisión y transformaciones con preview no destructiva; preservar UV y normales cuando sea posible.
+- **Modo Rig/Pose:** picking de huesos y controladores visibles, manipulación de articulaciones con gizmos y límites calibrados; no editar accidentalmente la malla base cuando se posa un personaje.
+- **Modo Sculpt/Paint posterior:** pinceles de deformación, smooth, máscaras, weight paint y pintura PBR sobre UV.
+
+**Diseño técnico:** `Raycaster` / `three-mesh-bvh` opcional para picking; `TransformControls` de Drei/Three para transformaciones de objetos; editor propio de subelementos sobre `BufferGeometry`, con IDs de selección estables, operaciones en coordenadas locales, actualización de `position`, `normal`, `boundingBox`/`boundingSphere`, manejo de geometrías compartidas y descarte de buffers GPU antiguos. No modificar directamente una geometría de `SkinnedMesh` sin separar edición base de deformación animada. Integrar `OrbitControls` para suspender navegación durante drag, atajos y undo/redo transaccional. El sistema de selección debe convivir con la cámara, las capas y la timeline existentes.
+
+**Pruebas mínimas:** arrastrar objeto con mouse; mover un vértice y conservar forma al guardar/reabrir; seleccionar cara y extruir; rotar un hueso sin alterar geometría base; verificar picking sobre GLB importado; comprobar undo/redo y ausencia de interferencia con OrbitControls. **Estado: especificado, no verificado como implementado.**
