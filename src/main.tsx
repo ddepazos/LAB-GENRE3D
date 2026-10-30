@@ -115,7 +115,7 @@ function App(){
     const before=[...keys].reverse().find(k=>k.frame<=nextFrame)??keys[0];
     const after=keys.find(k=>k.frame>=nextFrame)??keys[keys.length-1];
     const t=before.frame===after.frame?0:(nextFrame-before.frame)/(after.frame-before.frame);
-    a.bones.forEach((bone,i)=>{for(let j=0;j<3;j++){const v=(before.bones[i]?.[j]??0)*(1-t)+(after.bones[i]?.[j]??0)*t;bone.rotation.setComponent(j,v)}});
+    a.bones.forEach((bone,i)=>{for(let j=0;j<3;j++){const v=(before.bones[i]?.[j]??0)*(1-t)+(after.bones[i]?.[j]??0)*t;bone.rotation[j===0?"x":j===1?"y":"z"]=v}});
     a.morphs.forEach((m,i)=>{if(m.mesh.morphTargetInfluences)m.mesh.morphTargetInfluences[m.index]=(before.morphs[i]??0)*(1-t)+(after.morphs[i]??0)*t});
     setRigRevision(v=>v+1);
   };
