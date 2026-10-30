@@ -48,3 +48,8 @@ Proyecto **LAB GENRE3D** (repositorio `ddepazos/LAB-GENRE3D`). Independiente de 
 
 ## Criterio de verificación
 **Código incorporado** ≠ **compilación exitosa** ≠ **despliegue publicado** ≠ **función probada en navegador**. Registrar por separado los cuatro estados. No modificar LAB Studio ni crear ramas nuevas. Mantener `main` y evitar ciclos de despliegue sin comprobar logs.
+
+## Avance posterior — sincronización GLB y pose original
+- Commit `0cdd449`: el contenedor del GLB importado recibe `position`, `rotation` y `scale` del estado React; los cambios del inspector se reflejan en el viewport y los gizmos siguen actualizando el estado al terminar el arrastre.
+- Se capturan las rotaciones iniciales de los huesos al importar; «Restablecer pose original de huesos» recupera esas rotaciones, en lugar de forzar una pose Euler cero.
+- **Pendiente de verificar**: compilación CI/Cloudflare y prueba real con GLB animado; estas correcciones no implican rigging avanzado ni edición de vértices/caras.
