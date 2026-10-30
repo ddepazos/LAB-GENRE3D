@@ -1,3 +1,4 @@
+import type {ClipLayer} from './animationLayers';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type {HandSnapshot} from './HandLab';
@@ -8,9 +9,9 @@ export type Vec3=[number,number,number];
 export type Shape='box'|'sphere'|'torus'|'cone'|'cylinder';
 export type Item={id:number;name:string;shape:Shape;color:string;visible:boolean;position:Vec3;rotation:Vec3;scale:Vec3;metalness?:number;roughness?:number;wireframe?:boolean;flatShading?:boolean;segments?:number;meshOffset?:Vec3;preset?:MaterialPreset;geometry?:MeshData;weights?:{indices:number[];values:number[]}};
 export type RigKey={frame:number;bones:number[][];morphs:number[]};
-export type ImportedAsset={id:number;name:string;object:THREE.Group;sourceGlb:string;clips:THREE.AnimationClip[];visible:boolean;position:Vec3;rotation:Vec3;scale:Vec3;morphCount:number;boneCount:number;morphs:{name:string;mesh:THREE.Mesh;index:number}[];bones:THREE.Bone[];restRotations:Vec3[];rigKeys:RigKey[]};
+export type ImportedAsset={id:number;name:string;object:THREE.Group;sourceGlb:string;clips:THREE.AnimationClip[];visible:boolean;position:Vec3;rotation:Vec3;scale:Vec3;morphCount:number;boneCount:number;morphs:{name:string;mesh:THREE.Mesh;index:number}[];bones:THREE.Bone[];restRotations:Vec3[];rigKeys:RigKey[];layers?:ClipLayer[]};
 type NodeState={path:number[];position:Vec3;quaternion:[number,number,number,number];scale:Vec3;visible:boolean;morphs?:number[];geometry?:MeshData;weights?:{indices:number[];values:number[]}};
-type SavedAsset=Pick<ImportedAsset,'id'|'name'|'sourceGlb'|'visible'|'position'|'rotation'|'scale'|'restRotations'|'rigKeys'>&{nodes:NodeState[]};
+type SavedAsset=Pick<ImportedAsset,'id'|'name'|'sourceGlb'|'visible'|'position'|'rotation'|'scale'|'restRotations'|'rigKeys'|'layers'>&{nodes:NodeState[]};
 export type EditorState={frame:number;showGrid:boolean;transparent:boolean;rigLoop:boolean;timelineOpen:boolean;selected:number|null;selectedAsset:number|null};
 export type ModuleState={hand?:HandSnapshot;character?:CharacterSnapshot};
 export type ProjectFile={application:'LAB GENRE3D';version:3;items:Item[];assets:SavedAsset[];editor:EditorState;modules?:ModuleState};
@@ -70,7 +71,7 @@ export async function loadAsset(buffer:ArrayBuffer,name:string,assetId:number):P
 function walk(root:THREE.Object3D,callback:(node:THREE.Object3D,path:number[])=>void,path:number[]=[]){if(root.userData.editorOnly)return;callback(root,path);root.children.forEach((node,index)=>walk(node,callback,[...path,index]))}
 function snapshot(asset:ImportedAsset):SavedAsset{
  const nodes:NodeState[]=[];walk(asset.object,(node,path)=>{const mesh=node as THREE.Mesh;nodes.push({path,...((mesh as THREE.SkinnedMesh).isSkinnedMesh&&mesh.geometry.userData.genre3dWeightsEdited?{weights:{indices:Array.from(mesh.geometry.attributes.skinIndex.array),values:Array.from(mesh.geometry.attributes.skinWeight.array)}}:{}),position:node.position.toArray() as Vec3,quaternion:node.quaternion.toArray(),scale:node.scale.toArray() as Vec3,visible:node.visible,...(mesh.isMesh&&mesh.geometry.userData.genre3dEdited?{geometry:geometryData(mesh.geometry)}:{}),...(mesh.morphTargetInfluences?{morphs:[...mesh.morphTargetInfluences]}:{})})});
- return {id:asset.id,name:asset.name,sourceGlb:asset.sourceGlb,position:[...asset.position],rotation:[...asset.rotation],scale:[...asset.scale],visible:asset.visible,restRotations:asset.restRotations.map(v=>[...v]),rigKeys:structuredClone(asset.rigKeys),nodes};
+ return {id:asset.id,name:asset.name,sourceGlb:asset.sourceGlb,position:[...asset.position],rotation:[...asset.rotation],scale:[...asset.scale],visible:asset.visible,restRotations:asset.restRotations.map(v=>[...v]),rigKeys:structuredClone(asset.rigKeys),...(asset.layers?{layers:structuredClone(asset.layers)}:{}),nodes};
 }
 export function createProject(items:Item[],assets:ImportedAsset[],editor:EditorState,modules:ModuleState={}):Blob {
  const file:ProjectFile={application:'LAB GENRE3D',version:3,items:items.map(item),assets:assets.map(snapshot),editor:{...editor},modules:structuredClone(modules)};
@@ -96,6 +97,7 @@ export async function openProject(blob:Blob):Promise<{items:Item[];assets:Import
   }
   asset.restRotations=array(v.restRotations,asset.bones.length).map(vec3);if(asset.restRotations.length!==asset.bones.length)fail('Pose de reposo incompatible');
   const frames=new Set<number>();asset.rigKeys=array(v.rigKeys,241).map(value=>{const key=record(value),frame=id(key.frame);if(frame>240||frames.has(frame))fail('Fotograma de rig inválido');frames.add(frame);const bones=array(key.bones,asset.bones.length).map(vec3),morphs=array(key.morphs,asset.morphs.length).map(number);if(bones.length!==asset.bones.length||morphs.length!==asset.morphs.length)fail('Keyframe incompatible con el rig');return {frame,bones,morphs}}).sort((a,b)=>a.frame-b.frame);
+  if(v.layers!==undefined){const seen=new Set<number>();asset.layers=array(v.layers,64).map(value=>{const l=record(value),clip=id(l.clip),weight=number(l.weight),speed=number(l.speed),offset=number(l.offset);if(clip>=asset.clips.length||seen.has(clip)||weight<0||weight>1||speed<.25||speed>2||offset<0||offset>30)fail('Capa de animación inválida');seen.add(clip);return {clip,enabled:bool(l.enabled),weight,speed,offset}})}
   asset.object.updateMatrixWorld(true);assets.push(asset);
  }
  uniqueIds(assets);const e=record(file.editor),frame=id(e.frame);if(frame>240)fail('Fotograma fuera de rango');

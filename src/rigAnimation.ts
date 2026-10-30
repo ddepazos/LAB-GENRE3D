@@ -1,3 +1,4 @@
+import {bakeLayerClip} from './animationLayers';
 import * as THREE from 'three';
 import type {ImportedAsset} from './projectPersistence';
 
@@ -32,6 +33,7 @@ export function rigAnimationClip(asset:ImportedAsset,fps=30):THREE.AnimationClip
 export function assetAnimationClips(asset:ImportedAsset):THREE.AnimationClip[]{
   const authored=rigAnimationClip(asset);
   if(authored)return [authored];
+  if(asset.layers){const clip=bakeLayerClip(asset.object,asset.clips,asset.layers);return clip?[clip]:[]}
   return asset.clips.map(source=>{
     const clip=source.clone();clip.name=asset.name+' · '+source.name;
     clip.tracks.forEach(track=>{

@@ -4,8 +4,9 @@ import {readFileSync,writeFileSync,unlinkSync} from 'node:fs';
 import * as THREE from 'three';
 import {GLTFExporter} from 'three/examples/jsm/exporters/GLTFExporter.js';
 globalThis.FileReader=class{readAsArrayBuffer(blob){blob.arrayBuffer().then(result=>{this.result=result;this.onloadend?.()})}};
+const layerTarget=new URL('../.layers-test.mjs',import.meta.url);writeFileSync(layerTarget,ts.transpileModule(readFileSync(new URL('../src/animationLayers.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText);
 const target=new URL('../.rig-animation-test.mjs',import.meta.url);
-writeFileSync(target,ts.transpileModule(readFileSync(new URL('../src/rigAnimation.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText);
+writeFileSync(target,ts.transpileModule(readFileSync(new URL('../src/rigAnimation.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText.replace("'./animationLayers'","'./.layers-test.mjs'"));
 try{
  const {rigAnimationClip}=await import(target.href);
  const root=new THREE.Group(),bone=new THREE.Bone();root.add(bone);
@@ -21,4 +22,4 @@ try{
  assert.equal(rigAnimationClip({...asset,rigKeys:[]}),null);assert.throws(()=>rigAnimationClip(asset,0));
  assert.equal(asset.rigKeys[0].frame,30);
  console.log('PASS: timeline interpolation, multi-morph weights, GLB animation channels, empty keys, FPS and source preservation');
-}finally{unlinkSync(target)}
+}finally{unlinkSync(target);unlinkSync(layerTarget)}

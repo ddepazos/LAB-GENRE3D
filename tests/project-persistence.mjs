@@ -22,6 +22,7 @@ try{
  const binary=await new GLTFExporter().parseAsync(scene,{binary:true,animations:[clip]});
  const asset=await loadAsset(binary,'personaje.glb',111);assert.equal(asset.bones.length,2);assert.equal(asset.morphs.length,1);assert.equal(asset.clips[0].name,'OriginalClip');
  asset.morphs[0].mesh.geometry.attributes.skinWeight.setXYZW(0,.25,.75,0,0);asset.morphs[0].mesh.geometry.userData.genre3dWeightsEdited=true;
+ asset.layers=[{clip:0,enabled:true,weight:.7,speed:.5,offset:1}];
  const rest=structuredClone(asset.restRotations);asset.bones[1].rotation.z=.7;asset.morphs[0].mesh.morphTargetInfluences[0]=.65;asset.position=[2,3,4];asset.rotation=[.1,.2,.3];asset.scale=[2,1,.5];asset.visible=false;
  asset.rigKeys=[{frame:0,bones:rest.map(v=>[...v]),morphs:[0]},{frame:30,bones:asset.bones.map(b=>[b.rotation.x,b.rotation.y,b.rotation.z]),morphs:[.65]}];
  const item={id:1,name:'Malla editada',shape:'box',color:'#123456',visible:false,position:[1,2,3],rotation:[.2,0,0],scale:[1,2,1],preset:'metal',metalness:.7,geometry:{positions:[0,0,0,2,0,0,0,3,0],uvs:[0,0,1,0,0,1]}};
@@ -31,7 +32,7 @@ try{
  const blob=createProject([item],[asset],editor,modules);const reopened=await openProject(blob),a=reopened.assets[0];
  assert.deepEqual(reopened.items,[item]);assert.deepEqual(reopened.editor,editor);assert.deepEqual(reopened.modules,modules);
  assert.equal(a.sourceGlb,asset.sourceGlb,'retain original GLB bytes and embedded materials/clips');
- assert.equal(a.morphs[0].mesh.geometry.attributes.skinWeight.getX(0),.25);assert.equal(a.morphs[0].mesh.geometry.attributes.skinWeight.getY(0),.75);assert.deepEqual(a.restRotations,rest);assert.deepEqual(a.rigKeys,asset.rigKeys);assert.deepEqual(a.position,asset.position);assert.deepEqual(a.rotation,asset.rotation);assert.deepEqual(a.scale,asset.scale);assert.equal(a.visible,false);
+ assert.equal(a.morphs[0].mesh.geometry.attributes.skinWeight.getX(0),.25);assert.equal(a.morphs[0].mesh.geometry.attributes.skinWeight.getY(0),.75);assert.deepEqual(a.layers,asset.layers);assert.deepEqual(a.restRotations,rest);assert.deepEqual(a.rigKeys,asset.rigKeys);assert.deepEqual(a.position,asset.position);assert.deepEqual(a.rotation,asset.rotation);assert.deepEqual(a.scale,asset.scale);assert.equal(a.visible,false);
  assert(Math.abs(a.bones[1].rotation.z-.7)<1e-6);assert.equal(a.morphs[0].mesh.morphTargetInfluences[0],.65);assert.equal(a.clips[0].name,'OriginalClip');
  assert.equal(a.morphs[0].mesh.material.color.getHexString(),asset.morphs[0].mesh.material.color.getHexString());
  const second=await openProject(createProject(reopened.items,reopened.assets,reopened.editor,reopened.modules));assert.equal(second.assets[0].sourceGlb,asset.sourceGlb);assert(Math.abs(second.assets[0].bones[1].rotation.z-.7)<1e-6);
