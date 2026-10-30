@@ -27,3 +27,19 @@ export function rigAnimationClip(asset:ImportedAsset,fps=30):THREE.AnimationClip
   });
   return tracks.length?new THREE.AnimationClip(asset.name+' · rig LAB',-1,tracks):null;
 }
+
+/** Rebind imported track targets to UUIDs so equal names in other GLBs cannot collide. */
+export function assetAnimationClips(asset:ImportedAsset):THREE.AnimationClip[]{
+  const authored=rigAnimationClip(asset);
+  if(authored)return [authored];
+  return asset.clips.map(source=>{
+    const clip=source.clone();clip.name=asset.name+' · '+source.name;
+    clip.tracks.forEach(track=>{
+      const parsed=THREE.PropertyBinding.parseTrackName(track.name);
+      const target=THREE.PropertyBinding.findNode(asset.object,parsed.nodeName);
+      if(!(target instanceof THREE.Object3D)||parsed.objectName)throw new Error('No se pudo vincular la pista '+track.name);
+      track.name=target.uuid+'.'+parsed.propertyName+(parsed.propertyIndex!==undefined?'['+parsed.propertyIndex+']':'');
+    });
+    return clip;
+  });
+}
