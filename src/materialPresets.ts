@@ -1,0 +1,15 @@
+import {useMemo} from "react";
+import * as THREE from "three";
+export type MaterialPreset="liso"|"piel"|"hueso"|"metal"|"piedra"|"madera"|"escamas";
+export const presets:Record<MaterialPreset,{label:string;color:string;roughness:number;metalness:number}>={
+ liso:{label:"Liso",color:"#a9b6ff",roughness:.5,metalness:.25},
+ piel:{label:"Piel",color:"#bc886d",roughness:.86,metalness:0},
+ hueso:{label:"Hueso",color:"#d9ccb0",roughness:.83,metalness:0},
+ metal:{label:"Acero",color:"#a4afbf",roughness:.3,metalness:.85},
+ piedra:{label:"Piedra",color:"#858c91",roughness:.94,metalness:0},
+ madera:{label:"Madera",color:"#a37a4e",roughness:.82,metalness:0},
+ escamas:{label:"Escamas",color:"#678d71",roughness:.65,metalness:.05}
+};
+function seeded(x:number,y:number){const n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n)}
+function makeMaps(preset:MaterialPreset,res:number){const size=res;const c=document.createElement("canvas");c.width=c.height=size;const ctx=c.getContext("2d");if(!ctx)return null;const img=ctx.createImageData(size,size);const base=new THREE.Color(presets[preset].color);const h=new Float32Array(size*size);for(let y=0;y<size;y++)for(let x=0;x<size;x++){const u=x/size,v=y/size;const noise=seeded(x>>2,y>>2)*.12+seeded(x,y)*.07;let pattern=0;if(preset==="piel")pattern=Math.sin(u*140)*Math.sin(v*140)*.035;else if(preset==="hueso")pattern=seeded(x>>3,y>>3)*.09;else if(preset==="metal")pattern=Math.sin(v*size*1.6)*.03;else if(preset==="piedra")pattern=seeded(x>>4,y>>4)*.28;else if(preset==="madera")pattern=Math.sin(u*48+Math.sin(v*19)*3)*.13;else if(preset==="escamas"){const yy=Math.floor(v*14),xx=Math.floor(u*18+(yy%2)*.5);pattern=(1-Math.abs((u*18+(yy%2)*.5)%1-.5)*2)*.22+seeded(xx,yy)*.05}const k=Math.max(.3,Math.min(1.5,.9+noise+pattern));const i=(y*size+x)*4;img.data[i]=Math.min(255,base.r*255*k);img.data[i+1]=Math.min(255,base.g*255*k);img.data[i+2]=Math.min(255,base.b*255*k);img.data[i+3]=255;h[y*size+x]=noise+pattern}ctx.putImageData(img,0,0);const color=new THREE.CanvasTexture(c);color.colorSpace=THREE.SRGBColorSpace;color.wrapS=color.wrapT=THREE.RepeatWrapping;const normalCanvas=document.createElement("canvas");normalCanvas.width=normalCanvas.height=size;const nctx=normalCanvas.getContext("2d");if(!nctx)return {color,normal:null};const ni=nctx.createImageData(size,size);for(let y=0;y<size;y++)for(let x=0;x<size;x++){const a=y*size+x;const dx=h[y*size+(x+1)%size]-h[y*size+(x+size-1)%size];const dy=h[((y+1)%size)*size+x]-h[((y+size-1)%size)*size+x];const vec=new THREE.Vector3(-dx*2,-dy*2,1).normalize();ni.data[a*4]=(vec.x*.5+.5)*255;ni.data[a*4+1]=(vec.y*.5+.5)*255;ni.data[a*4+2]=(vec.z*.5+.5)*255;ni.data[a*4+3]=255}nctx.putImageData(ni,0,0);const normal=new THREE.CanvasTexture(normalCanvas);normal.wrapS=normal.wrapT=THREE.RepeatWrapping;return {color,normal}}
+export function useProceduralMaps(preset:MaterialPreset,resolution:128|256|512){const maps=useMemo(()=>preset==="liso"?null:makeMaps(preset,resolution),[preset,resolution]);return maps}
