@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { Canvas, ThreeEvent } from "@react-three/fiber";
 import { Grid, OrbitControls, TransformControls } from "@react-three/drei";
 import * as THREE from "three";
+import { enableMeshAcceleration } from "./meshEngine";
+enableMeshAcceleration();
 import "./style.css";
 import HandLab from "./HandLab";
 import { exportToLabStudio } from "./labInterop";
