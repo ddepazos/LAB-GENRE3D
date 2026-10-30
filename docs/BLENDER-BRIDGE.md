@@ -24,3 +24,11 @@ Adjust the executable path to the Blender version actually installed. Alternativ
 - This pipeline does not automatically generate high-quality human topology, facial skinning, UV maps, or facial rigs.
 - Preserve original input and export to a different output filename. Avoid processing untrusted .blend scripts.
 - No build, Blender runtime execution, end-to-end round trip, or deployed UI test is confirmed.
+
+## Conexión web preparada — 30 octubre 2026
+- Pages Function `functions/api/blender/[[path]].js` atiende `/api/blender/health` y `/api/blender/process` con el gateway compartido.
+- Configuración necesaria en producción: `GENRE3D_RENDER_URL`, secreto `GENRE3D_INTERNAL_TOKEN` coincidente con Render, `GENRE3D_ACCESS_ISSUER`, `GENRE3D_ACCESS_AUD`, `GENRE3D_ALLOWED_EMAIL`. Proteger la ruta con la aplicación Access correspondiente. No configurar valores secretos en código React.
+- Se verifica la firma RSA del JWT de Access; un encabezado email enviado por el cliente no concede acceso. Peticiones con cuerpo chunked también tienen límite de 12 MB.
+- Cliente valida GLB 2.0 antes/después del procesamiento, traduce errores y tiene timeout. Un resultado correcto se importa como objeto adicional y se descarga; el original permanece.
+- Pruebas de contrato con backend simulado: firma válida, rechazo de JWT falsificado, ausencia de configuración y respuesta GLB correctas. Esto no demuestra ejecución de Blender real.
+- Cloudflare no tenía variables del puente al inspeccionar. Render requiere confirmar workspace antes de consultar/configurar el servicio. Workspace disponible: `plcdb` (`tea-darcos60tbcc73b2uk1g`). No se seleccionó automáticamente. Activación real y prueba extremo a extremo pendientes de esa identificación.
