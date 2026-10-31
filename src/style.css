@@ -52,3 +52,10 @@ html,body,#root{height:100%;min-height:0;overflow:hidden}
 .characterlab-joint{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:8px 0;border-top:1px solid #42536a;border-bottom:1px solid #42536a}.characterlab-joint strong{grid-column:1/-1;color:#f5d28b;font-size:11px}.characterlab-joint button{padding:5px 2px;font-size:10px}.characterlab-canvas canvas{cursor:crosshair}
 
 .export-downloads{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 14px;background:#263549;color:#e6edff;font-size:12px}.export-downloads a{color:#c7dcff;text-decoration:underline}.export-downloads button{margin-left:auto}
+/* Contextual tools remain collapsed until needed. */
+.tools details{border:1px solid #34394b;border-radius:5px;margin:6px 0;padding:7px;min-width:0}
+.tools summary{cursor:pointer;color:#d0c3ff;font-size:11px;font-weight:600;line-height:1.5}
+.tools details label{display:block;margin-top:7px;font-size:10px}
+.tools details input,.tools details select,.tools details textarea{max-width:100%;box-sizing:border-box}
+.tools details textarea{width:100%;background:#151822;color:#d9dcef;font-family:monospace}
+.tools details button{margin-top:6px;max-width:100%;white-space:normal}

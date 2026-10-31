@@ -45,3 +45,12 @@ export function assetAnimationClips(asset:ImportedAsset):THREE.AnimationClip[]{
     return clip;
   });
 }
+
+/** A first clip suitable for receivers that play one animation per imported scene. */
+export function sceneAnimationClips(assets:ImportedAsset[]):THREE.AnimationClip[]{
+ const lists=assets.filter(a=>a.visible).map(assetAnimationClips).filter(clips=>clips.length);
+ const clips=lists.flat();if(lists.length<2)return clips;
+ const first=lists.map(list=>list[0]);
+ const combined=new THREE.AnimationClip('Escena_LAB_combinada',Math.max(...first.map(clip=>clip.duration)),first.flatMap(clip=>clip.tracks.map(track=>track.clone())));
+ return [combined,...clips];
+}

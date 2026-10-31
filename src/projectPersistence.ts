@@ -36,7 +36,7 @@ function item(value:unknown):Item{
  for(const k of ['wireframe','flatShading'] as const)if(v[k]!==undefined)result[k]=bool(v[k]);
  if(v.segments!==undefined){const n=id(v.segments);if(n<3||n>64)fail('Resolución geométrica inválida');result.segments=n}
  if(v.meshOffset!==undefined)result.meshOffset=vec3(v.meshOffset);
- if(v.preset!==undefined){if(!['liso','piel','hueso','metal','piedra','madera','escamas'].includes(String(v.preset)))fail('Material procedural incompatible');result.preset=v.preset as MaterialPreset}
+ if(v.preset!==undefined){if(!['liso','piel','hueso','metal','piedra','madera','escamas','serpiente','leopardo','fuego'].includes(String(v.preset)))fail('Material procedural incompatible');result.preset=v.preset as MaterialPreset}
  if(v.geometry!==undefined)result.geometry=meshValue(v.geometry);
  return result;
 }
