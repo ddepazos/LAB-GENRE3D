@@ -13,7 +13,7 @@ export function createHeadSurface(material:THREE.Material,wide=false){
   if(nz>0){const front=THREE.MathUtils.smoothstep(nz,.05,.65);
    z+=front*(.025*bump(x,y,0,.22,.25,.14)+.045*bump(x,y,0,-.25,.12,.07)
     +.043*(bump(x,y,-.19,-.015,.075,.09)+bump(x,y,.19,-.015,.075,.09))
-    -.035*(bump(x,y,-.132,.096,.078,.052)+bump(x,y,.132,.096,.078,.052))
+    -.035*(bump(x,y,-.118,.096,.065,.043)+bump(x,y,.118,.096,.065,.043))
     +.035*bump(x,y,0,.015,.035,.12)+.05*bump(x,y,0,-.055,.047,.035));
   }
   p.setXYZ(i,x,y,z-.025);

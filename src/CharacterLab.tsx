@@ -24,7 +24,7 @@ function Puppet({kind,motion,speed,playing,angles,face,selected,onPick,onDrag,sa
  const down=(e:any,name:Joint)=>{e.stopPropagation();dragging.current=name;lastX.current=e.nativeEvent.clientX;onPick(name);e.target.setPointerCapture(e.pointerId)};
  const move=(e:any)=>{if(!dragging.current)return;e.stopPropagation();const x=e.nativeEvent.clientX;onDrag(dragging.current,(x-lastX.current)*.8);lastX.current=x};
  const up=(e:any)=>{if(dragging.current){e.stopPropagation();dragging.current=null;if(e.target.hasPointerCapture(e.pointerId))e.target.releasePointerCapture(e.pointerId)}};
- const clock=useRef(0);const color=kind==="Robot"?"#9db2c9":kind==="Criatura"?"#6eac83":kind==="Maniquí"?"#d5c3a6":"#d2a184";const jointColor=kind==="Robot"?"#536f92":"#866d64";
+ const clock=useRef(0);const color=kind==="Robot"?"#9db2c9":kind==="Criatura"?"#6eac83":kind==="Maniquí"?"#d5c3a6":"#d2a184";const jointColor=kind==="Robot"?"#536f92":color;
  useFrame((_,delta)=>{if(playing)clock.current+=Math.min(delta,.05)*speed;const t=sampleTime??clock.current;const gait=motion==="Correr"?1:motion==="Caminar"?.52:0;const wave=Math.sin(t*(motion==="Correr"?9:5))*gait;const rad=Math.PI/180;
   shoulders.current.forEach((g,i)=>{if(g)g.rotation.x=angles[i===0?"Hombro izq.":"Hombro der."]*rad+(motion==="Saludar"&&i===1?-1.15:(i===0?1:-1)*wave*.7)});
   elbows.current.forEach((g,i)=>{if(g)g.rotation.x=angles[i===0?"Codo izq.":"Codo der."]*rad+(motion==="Saludar"&&i===1?-.85:Math.max(0,wave)*.25)});

@@ -8,6 +8,7 @@ Referencia aportada: https://anatomy3datlas.com/ y su sección de cabeza https:/
 
 - Superficie craneofacial continua original: perfil del mentón, pómulos, frente y concavidades orbitales. Pesos suavizados entre base craneal y mandíbula; el giro mandibular deforma la superficie de piel.
 - Labios superior/inferior de 17 segmentos cada uno: contorno, apertura y comisuras responden a sonrisa y apertura de boca. Nombres estables para exportación animada.
+- Pose neutra con dientes ocultos y labios cerrados; proporciones oculares reducidas tras la inspección visual.
 - Pupilas, iris, reflejos; párpados superiores e inferiores. El control de cierre cubre y reduce la abertura ocular.
 - Nariz con puente, punta, alas y fosas; orejas con relieve interno, cejas curvas y dos filas de dientes.
 - Materiales diferenciados para piel, labios, ojos, iris, dentición y cavidad oral. No se incorporan texturas fotográficas.

@@ -28,28 +28,29 @@ function HeadDetail({kind,pose,onJawDrag}:{kind:HeadKind;pose:FacePose;onJawDrag
  useEffect(()=>()=>Object.values(materials).forEach(m=>m.dispose()),[materials]);
  const {skin,shadow,lip,white,iris,pupil,mouth,tongue,teeth,hair}=materials;
  const brow=THREE.MathUtils.clamp(pose.brow,-100,100);
+ const mouthVisible=Math.max(.001,Math.min(1,f.open+f.jaw*2));
  return <group name="Cabeza_detallada_LAB">
   <HeadSurface material={skin} jaw={f.jaw} wide={creature}/>
-  <mesh name="Cavidad_oral" material={mouth} position={[0,-.155,.242]} scale={[.157+f.smile*.025,.032+f.open*.03+f.jaw*.09,.038]}><sphereGeometry args={[1,32,20]}/></mesh>
+  <mesh name="Cavidad_oral" material={mouth} position={[0,-.155,.242]} scale={[.157+f.smile*.025,.002+f.open*.03+f.jaw*.09,.038]}><sphereGeometry args={[1,32,20]}/></mesh>
   <group name="Mandibula" position={[0,-.13,-.015]} rotation={[f.jaw,0,0]}>
-   <mesh name="Lengua" material={tongue} position={[0,-.055,.265+pose.tongue*.00035]} scale={[.07,.016+Math.max(0,pose.tongue)*.0001,.042]}><sphereGeometry args={[1,24,16]}/></mesh>
-   {Array.from({length:9},(_,i)=>{const x=(i-4)*.029;return <mesh key={i} name={'Diente_inferior_'+i} material={teeth} position={[x,-.029,.263-.12*x*x]} scale={[.012,.019,.012]}><sphereGeometry args={[1,12,10]}/></mesh>})}
-   {Array.from({length:17},(_,i)=>{const u=(i-8)/8,x=u*(.151+f.smile*.025),y=-.034-.021*(1-u*u)-f.open*.025+f.smile*.025*u*u;return <mesh key={i} name={'Labio_inferior_'+i} material={lip} position={[x,y,.278-.045*u*u]} rotation={[0,0,u*.22]} scale={[.015,.012*(1-.35*Math.abs(u)),.013]}><sphereGeometry args={[1,12,10]}/></mesh>})}
+   <mesh name="Lengua" material={tongue} position={[0,-.055,.265+pose.tongue*.00035]} scale={[.07,(.016+Math.max(0,pose.tongue)*.0001)*mouthVisible,.042]}><sphereGeometry args={[1,24,16]}/></mesh>
+   {Array.from({length:9},(_,i)=>{const x=(i-4)*.029;return <mesh key={i} name={'Diente_inferior_'+i} material={teeth} position={[x,-.029,.263-.12*x*x]} scale={[.012,.019*mouthVisible,.012]}><sphereGeometry args={[1,12,10]}/></mesh>})}
+   {Array.from({length:17},(_,i)=>{const u=(i-8)/8,x=u*(.128+f.smile*.022),y=-.022-.003*(1-u*u)-f.open*.025+f.smile*.025*u*u;return <mesh key={i} name={'Labio_inferior_'+i} material={lip} position={[x,y,.278-.045*u*u]} rotation={[0,0,u*.22]} scale={[.015,.012*(1-.35*Math.abs(u)),.013]}><sphereGeometry args={[1,12,10]}/></mesh>})}
   </group>
-  {Array.from({length:9},(_,i)=>{const x=(i-4)*.029;return <mesh key={i} name={'Diente_superior_'+i} material={teeth} position={[x,-.157,.275-.12*x*x]} scale={[.012,.021,.012]}><sphereGeometry args={[1,12,10]}/></mesh>})}
-  {Array.from({length:17},(_,i)=>{const u=(i-8)/8,x=u*(.151+f.smile*.025),cupid=.006*Math.cos(u*Math.PI*3)*(1-Math.abs(u));return <mesh key={i} name={'Labio_superior_'+i} material={lip} position={[x,-.152+cupid+f.smile*.027*u*u,.283-.045*u*u]} scale={[.015,.009*(1-.35*Math.abs(u)),.014]}><sphereGeometry args={[1,12,10]}/></mesh>})}
+  {Array.from({length:9},(_,i)=>{const x=(i-4)*.029;return <mesh key={i} name={'Diente_superior_'+i} material={teeth} position={[x,-.157,.275-.12*x*x]} scale={[.012,.021*mouthVisible,.012]}><sphereGeometry args={[1,12,10]}/></mesh>})}
+  {Array.from({length:17},(_,i)=>{const u=(i-8)/8,x=u*(.128+f.smile*.022),cupid=.003*Math.cos(u*Math.PI*3)*(1-Math.abs(u));return <mesh key={i} name={'Labio_superior_'+i} material={lip} position={[x,-.152+cupid+f.smile*.027*u*u,.283-.045*u*u]} scale={[.015,.009*(1-.35*Math.abs(u)),.014]}><sphereGeometry args={[1,12,10]}/></mesh>})}
   {[-1,1].map(side=><group key={side} name={side<0?'Facial_izquierdo':'Facial_derecho'}>
-   <mesh name="Orbita" material={shadow} position={[side*.132,.095,.225]} scale={[.103,.066,.036]}><sphereGeometry args={[1,32,20]}/></mesh>
-   <mesh name="Globo_ocular" material={white} position={[side*.132,.096,.252]} scale={[.086,.052*Math.max(.001,1-f.blink),.044]}><sphereGeometry args={[1,32,24]}/></mesh>
-   <group name="Mirada" position={[side*.132+f.gazeX,.096+f.gazeY,.293]} scale={[1,Math.max(.001,1-f.blink),1]}>
-    <mesh name="Iris" material={iris} scale={[.032,.034,.009]}><sphereGeometry args={[1,28,20]}/></mesh>
-    <mesh name="Pupila" material={pupil} position={[0,0,.008]} scale={[.014,.018,.004]}><sphereGeometry args={[1,20,16]}/></mesh>
+   <mesh name="Orbita" material={shadow} position={[side*.118,.095,.225]} scale={[.079,.046,.036]}><sphereGeometry args={[1,32,20]}/></mesh>
+   <mesh name="Globo_ocular" material={white} position={[side*.118,.096,.252]} scale={[.066,.035*Math.max(.001,1-f.blink),.039]}><sphereGeometry args={[1,32,24]}/></mesh>
+   <group name="Mirada" position={[side*.118+f.gazeX,.096+f.gazeY,.293]} scale={[1,Math.max(.001,1-f.blink),1]}>
+    <mesh name="Iris" material={iris} scale={[.024,.025,.009]}><sphereGeometry args={[1,28,20]}/></mesh>
+    <mesh name="Pupila" material={pupil} position={[0,0,.008]} scale={[.010,.013,.004]}><sphereGeometry args={[1,20,16]}/></mesh>
     <mesh name="Reflejo" material={white} position={[-.009,.011,.012]} scale={[.005,.005,.002]}><sphereGeometry args={[1,12,8]}/></mesh>
    </group>
-   <mesh name="Parpado_superior" material={skin} position={[side*.132,.142-f.blink*.044,.263]} scale={[.091,.014+f.blink*.025,.039]}><sphereGeometry args={[1,28,20]}/></mesh>
-   <mesh name="Parpado_inferior" material={skin} position={[side*.132,.046+f.blink*.013,.259]} scale={[.089,.014,.032]}><sphereGeometry args={[1,28,16]}/></mesh>
-   <group name="Ceja" position={[side*.132,.192+brow*.00045+(side<0?pose.browLeft:pose.browRight)*.0004,.25]} rotation={[0,0,-side*brow*.002]}>
-    {Array.from({length:7},(_,i)=>{const u=(i-3)/3;return <mesh key={i} material={hair} position={[u*.031,.013*(1-u*u),-.014*u*u]} rotation={[0,0,-u*.15]} scale={[.02,.009*(1-.3*Math.abs(u)),.012]}><sphereGeometry args={[1,12,8]}/></mesh>})}
+   <mesh name="Parpado_superior" material={skin} position={[side*.118,.129-f.blink*.029,.263]} scale={[.071,.010+f.blink*.019,.035]}><sphereGeometry args={[1,28,20]}/></mesh>
+   <mesh name="Parpado_inferior" material={skin} position={[side*.118,.062+f.blink*.012,.259]} scale={[.070,.010,.030]}><sphereGeometry args={[1,28,16]}/></mesh>
+   <group name="Ceja" position={[side*.118,.172+brow*.00045+(side<0?pose.browLeft:pose.browRight)*.0004,.25]} rotation={[0,0,-side*brow*.002]}>
+    {Array.from({length:7},(_,i)=>{const u=(i-3)/3;return <mesh key={i} material={hair} position={[u*.026,.008*(1-u*u),-.014*u*u]} rotation={[0,0,-u*.15]} scale={[.019,.006*(1-.3*Math.abs(u)),.012]}><sphereGeometry args={[1,12,8]}/></mesh>})}
    </group>
    <group name="Oreja" position={[side*.303,-.015,-.005]} rotation={[0,side*.2,side*.08]}>
     <mesh material={skin} scale={[.048,.1,.062]}><sphereGeometry args={[1,28,20]}/></mesh>
