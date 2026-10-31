@@ -12,6 +12,7 @@ Base: main, 2e5e6382ecf2858402f61b80b75d1a7342818698. Alcance exclusivo: LAB GEN
 - Preset Sonrisa activa sonrisa al 75 %.
 - PBR: elimina multiplicación duplicada del color del preset, carga rugosidad/metalicidad del preset, bloquea aplicación durante procesamiento y rechaza repetición UV nula/no finita o rotación fuera de rango.
 - Selector de preset PBR tiene etiqueta accesible explícita.
+- Edición → Eliminar objeto seleccionado atiende también el GLB seleccionado; antes el botón no actuaba en GLB. Se bloquea sin selección y durante exportación/captura/guardado.
 
 ## Verificación local
 
