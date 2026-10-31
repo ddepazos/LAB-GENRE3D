@@ -1,5 +1,7 @@
 # Consolidación LAB Creative Suite — 30 octubre 2026
 
+> Este es un registro de entregas parciales, no una declaración de programa terminado. Para el alcance completo abierto —incluidos 2D→3D y Grease Pencil— consultar [Pendientes maestros](PENDIENTES-MAESTROS-GENRE3D.md).
+
 ## Alcance y autorización
 Trabajo en main, sin ramas nuevas. La restricción inicial de no modificar LAB Studio fue ampliada por el usuario: «si puedes hacer que lab studio se compatible mejor aun». Se incorporó compatibilidad de GLB animados en ddepazos/lab; las demás mejoras corresponden a LAB-GENRE3D. Se conservan documentos anteriores como historial.
 

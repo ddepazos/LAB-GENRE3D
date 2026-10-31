@@ -1,7 +1,7 @@
 # LAB GENRE3D — LAB Motion 3D
 
 **Arquitectura y hoja de ruta actualizadas · 30 octubre 2026**
-> **Estado verificado (30-10-2026):** Cloudflare Pages desplegó el commit `ea3f6da` correctamente. La interfaz incluye accesos directos a cabeza/rostro e importación GLB; las pruebas funcionales y el rigging avanzado siguen pendientes. [Informe técnico](docs/INFORME_ESTADO_2026-10-30.md).
+> **Estado actual: versión funcional en desarrollo. La implementación completa sigue pendiente.** Consulta el [registro maestro de requisitos abiertos y criterios de cierre](docs/PENDIENTES-MAESTROS-GENRE3D.md). Incluye 2D→3D, Grease Pencil, modelos detallados, PBR/UV, rigging avanzado y scripts; no deben darse por terminados por la existencia de una base funcional.
 
 
 **Aplicación:** https://lab-genre3d.pages.dev/  
@@ -24,7 +24,7 @@ React 18, TypeScript, Vite, Three.js 0.175, React Three Fiber, Drei, Zustand y M
 - **ModelingCore:** operaciones de geometría aisladas del editor; evaluar `three-mesh-bvh` para raycast y `three-bvh-csg` para booleanas, tras pruebas de compatibilidad. Extrusión, bisel, subdivisión, espejo y edición por mouse.
 - **MaterialLab:** `MeshStandardMaterial` / `MeshPhysicalMaterial`, mapas baseColor, normal, roughness, metalness, AO, emissive, alpha, UV y máscaras; biblioteca de piel, escamas, pelaje, cuero, tela, metal, hueso, fuego y superficies biomecánicas. Pintura 3D como fase posterior.
 - **Procesamiento externo opcional:** Blender para baking, rigging complejo, conversión y render pesado; FFmpeg para codificación compatible. No integrar Blender como segundo renderer web.
-- **Interop:** GLB/glTF + manifiesto JSON versionado (unidades, ejes, FPS, clips, materiales, licencias); intercambio con LAB Studio sin compartir estado interno ni modificar su repositorio.
+- **Interop:** GLB/glTF + manifiesto JSON versionado (unidades, ejes, FPS, clips, materiales, licencias); intercambio con LAB Studio sin compartir estado interno. Los cambios de compatibilidad en su repositorio fueron autorizados posteriormente por el usuario.
 
 ## Preset de personaje solicitado
 | Control | Valor inicial | Aplicación |
@@ -58,7 +58,7 @@ MVP: GLB/glTF animado y secuencia PNG RGBA transparente. Verificar reimportació
 6. Probar build, errores de consola, FPS y exportación antes de publicar.
 
 ## Política de cambios
-Trabajar exclusivamente en `ddepazos/LAB-GENRE3D`; no crear ramas nuevas ni tocar `ddepazos/lab`. Validar compilación y funcionamiento antes de producción. Documentar cada cambio y no confundir diseño, implementación y despliegue.
+Mantener repositorios separados y trabajar desde `main`, sin ramas nuevas. Los cambios de compatibilidad en `ddepazos/lab` cuentan con autorización posterior; no rehacer ni romper su editor 2D/lápiz. Validar compilación y funcionamiento antes de producción. Documentar cada cambio y no confundir diseño, implementación y despliegue.
 
 ## Manipulación directa de mallas en viewport — requisito prioritario
 **No sustituir por sliders:** todos los objetos, mallas y controladores de rig deben poder seleccionarse y editarse con el mouse en el viewport existente.
