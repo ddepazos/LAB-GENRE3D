@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test:consolidation": "node tests/ui-consolidation.mjs && node tests/creative-models.mjs && node tests/rig-tools.mjs && node tests/rig-animation.mjs && node tests/mesh-operations.mjs && node tests/project-persistence.mjs"
+    "test:consolidation": "node tests/ui-consolidation.mjs && node tests/creative-models.mjs && node tests/rig-tools.mjs && node tests/rig-animation.mjs && node tests/mesh-operations.mjs && node tests/project-persistence.mjs && node tests/head-detail.mjs"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
