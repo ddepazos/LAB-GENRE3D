@@ -11,7 +11,7 @@ export const facePresets: Record<string, FacePose> = {
   Neutra: neutralFace,
   Sorpresa: { jaw: 45, brow: 80, blink: 0, gazeX: 0, gazeY: 0, smile: 0, lipOpen: 0, tongue: 0, browLeft: 0, browRight: 0 },
   Enojo: { jaw: 12, brow: -75, blink: 20, gazeX: 0, gazeY: 0, smile: 0, lipOpen: 0, tongue: 0, browLeft: 0, browRight: 0 },
-  Sonrisa: { jaw: 22, brow: 35, blink: 12, gazeX: 0, gazeY: 0, smile: 0, lipOpen: 0, tongue: 0, browLeft: 0, browRight: 0 },
+  Sonrisa: { jaw: 22, brow: 35, blink: 12, gazeX: 0, gazeY: 0, smile: 75, lipOpen: 0, tongue: 0, browLeft: 0, browRight: 0 },
   Sueño: { jaw: 0, brow: -20, blink: 95, gazeX: 0, gazeY: 0, smile: 0, lipOpen: 0, tongue: 0, browLeft: 0, browRight: 0 }
 };
 const material = (color: string, roughness=.7, metalness=0) =>
