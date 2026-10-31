@@ -23,3 +23,11 @@ Referencia aportada: https://anatomy3datlas.com/ y su sección de cabeza https:/
 ## Límite de esta entrega
 
 Es una mejora del personaje procedural. No alcanza el detalle de un atlas anatómico ni constituye un modelo clínicamente validado. La superficie de cabeza usa dos huesos; el cuerpo sigue articulado por segmentos. Músculos faciales, skinning corporal de producción, retopología integral y texturas escaneadas siguen abiertos. Los proyectos GLB ya guardados conservan sus modelos originales; las nuevas instancias usan la plantilla actualizada.
+
+## Prueba en la versión publicada
+
+Cloudflare publicó `2bda8ad64ba86d4b9904776da7e62bea686ec5b0` con éxito (48f6e4b4-3456-483d-bf78-a6dd527b92da). La vista cercana del rostro y los presets se probaron en https://lab-genre3d.pages.dev/. Sueño cierra párpados al 100 %; Sorpresa fija mandíbula en 38 grados. Se corrigieron tras inspección los dientes expuestos en reposo y el tamaño excesivo de los ojos.
+
+Dos claves faciales en 0 y 10 generaron un GLB con 132 submallas, dos huesos (Base_craneal y Mandibula_piel) y un clip de 0,33 s. El editor reconoció la rotación mandibular y permitió reproducir el clip. No se modificó LAB Studio.
+
+![Vista cercana de la plantilla actualizada](evidence/rostro-detallado-20261031.jpg)
