@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
+import {collectAnatomyAttributes,type AnatomyAttributes} from "./anatomyMetadata";
 
 /** LAB Creative Suite interchange contract v1. */
 export type LabAssetManifest = {
@@ -11,6 +12,7 @@ export type LabAssetManifest = {
   animation: { fps: number; clipNames: string[]; durationSeconds: number };
   content: { meshes: number; skinnedMeshes: number; bones: number; morphTargets: number; materials: number };
   createdAt: string;
+  anatomy?: { node: string; attributes: AnatomyAttributes }[];
 };
 function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -56,7 +58,7 @@ export async function exportToLabStudio(
     schema: "lab.creative-suite.asset", version: 1, source: "LAB GENRE3D", target: "LAB Studio",
     asset: { file, format: "glb", units: "meters", upAxis: "Y", handedness: "right" },
     animation: { fps: options.fps ?? 30, clipNames: clips.map((c) => c.name), durationSeconds: Math.max(0, ...clips.map((c) => c.duration)) },
-    content, createdAt: new Date().toISOString()
+    content, createdAt: new Date().toISOString(), anatomy:collectAnatomyAttributes(scene)
   };
   const glbBlob=new Blob([binary],{type:"model/gltf-binary"});
   const manifestBlob=new Blob([JSON.stringify(manifest,null,2)],{type:"application/json"});
