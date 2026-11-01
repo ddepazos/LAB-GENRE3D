@@ -59,3 +59,46 @@ html,body,#root{height:100%;min-height:0;overflow:hidden}
 .tools details input,.tools details select,.tools details textarea{max-width:100%;box-sizing:border-box}
 .tools details textarea{width:100%;background:#151822;color:#d9dcef;font-family:monospace}
 .tools details button{margin-top:6px;max-width:100%;white-space:normal}
+
+
+/* UI cohesion 2026-11-01: visual-only. Preserve viewport grid dimensions and all controls. */
+.app{--ui-surface:#242c33;--ui-surface-raised:#303a43;--ui-border:#47535c;--ui-text:#e2e5e5;--ui-muted:#b3bdc2;--ui-accent:#c3a04f;--ui-focus:#e5bd65}
+.app>.top{background:#252d34;border-bottom-color:var(--ui-border)}
+.app>.top .brandmark,.app>.top .brand em{color:var(--ui-accent)}
+.app>.top nav button{color:var(--ui-muted);border-radius:6px!important;font-weight:600;letter-spacing:.01em}
+.app>.top nav button:hover,.app>.top nav button.nav-active{background:#414b51;color:#fff}
+.app>.top nav button:focus-visible,.app button:focus-visible,.app summary:focus-visible,.app a:focus-visible,.app input:focus-visible,.app select:focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px}
+.app>.subbar{background:#202830;border-bottom-color:var(--ui-border);letter-spacing:0}
+.app>.subbar>.sub-actions{gap:6px}
+.app>.subbar>.sub-actions>button,.app>.subbar>.sub-actions>.file-button{border-radius:6px!important;background:var(--ui-surface-raised);border:1px solid var(--ui-border);color:var(--ui-text);font-weight:550}
+.app>.subbar>.sub-actions>button:hover,.app>.subbar>.sub-actions>.file-button:hover{background:#48545b;border-color:var(--ui-accent)}
+.app>.workspace>.tools,.app>.workspace>.inspector{background:var(--ui-surface);color:var(--ui-text);border-color:var(--ui-border)}
+.app>.workspace h3{color:#d6bc7e;font-size:10px;letter-spacing:.055em;margin:12px 0 7px;line-height:1.4}
+.app>.workspace .tools{font-size:11px}
+.app>.workspace .tools>button,.app>.workspace .tools>.shapes button,.app>.workspace .tools>.shapes .file-button,.app>.workspace .tools>.toolgrid button{border:1px solid var(--ui-border);border-radius:6px;background:var(--ui-surface-raised);color:var(--ui-text);transition:background-color .12s ease,border-color .12s ease}
+.app>.workspace .tools button:hover:not(:disabled),.app>.workspace .tools .file-button:hover{background:#46535a;border-color:var(--ui-accent)}
+.app>.workspace .tools button.active,.app>.workspace .tools .toolgrid button.active{background:#5a4b31;border-color:var(--ui-accent);color:#fff}
+.app>.workspace .tools .toolgrid{gap:5px;margin-bottom:10px}
+.app>.workspace .tools .toolgrid button{padding:7px 2px;gap:3px}
+.app>.workspace .tools .shapes{gap:5px}
+.app>.workspace .tools .shapes button{padding:7px 8px}
+.app>.workspace .tools details{background:#29323a;border:1px solid var(--ui-border);border-radius:6px;margin:7px 0;padding:7px}
+.app>.workspace .tools details[open]{background:#303a42}
+.app>.workspace .tools summary{color:#e2c88b;line-height:1.4;font-weight:650}
+.app>.workspace .tools label{color:var(--ui-muted);line-height:1.45}
+.app>.workspace .tools input:not([type=checkbox]):not([type=range]):not([type=color]):not([type=file]),.app>.workspace .tools select{min-width:0;max-width:100%;border:1px solid var(--ui-border);border-radius:5px;background:#1b242b;color:var(--ui-text);padding:5px}
+.app>.workspace .tools input[type=range]{accent-color:var(--ui-accent)}
+.app>.workspace .tools small,.app>.workspace .tools .hint{color:var(--ui-muted);line-height:1.5}
+.app>.workspace>.inspector .tree-item.selected{background:#514831}
+.app>.workspace>.inspector .tree-item button:hover{color:#f3d99b}
+.app>.workspace>.inspector .properties>label{color:var(--ui-muted)}
+.app>.workspace>.inspector input:not([type=color]),.app>.workspace>.inspector select{border-radius:5px;border-color:var(--ui-border)}
+.app>.timeline{background:#242c33;border-top-color:var(--ui-border)}
+.app>.timeline .timeline-head{border-bottom-color:var(--ui-border)}
+.app>.timeline input[type=range]{accent-color:var(--ui-accent)}
+.app>footer{background:#202830;color:var(--ui-muted)}
+.app>.genre-menu{position:absolute;z-index:30;background:#2a343c;border:1px solid var(--ui-border);border-radius:0 0 8px 8px;box-shadow:0 12px 26px #0007;max-height:min(65dvh,520px);overflow:auto}
+.app>.genre-menu button{background:#36424a;color:var(--ui-text);border:1px solid var(--ui-border);border-radius:5px}
+.app>.genre-menu button:hover{background:#4b565b;border-color:var(--ui-accent)}
+.app button:disabled{cursor:not-allowed}
+@media(prefers-reduced-motion:reduce){.app>.workspace .tools button{transition:none}}
