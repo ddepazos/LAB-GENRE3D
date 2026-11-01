@@ -6,6 +6,10 @@ export type AnatomyAttributes={
   system:string; region:string; side:string; description:string;
   source:string; license:string; attribution:string;
   editable:boolean;
+  schema?:'lab.anatomy/1';
+  appearance?:{visible:boolean;opacity:number;color:string};
+  permissions?:{transform:boolean;geometry:boolean;material:boolean;visibility:boolean;rig:boolean;animation:boolean};
+  notes?:string;
 };
 export const emptyAnatomyAttributes=(name:string):AnatomyAttributes=>({
   structureId:'',name,latinName:'',fmaId:'',system:'',region:'',side:'',
@@ -16,6 +20,14 @@ export function readAnatomyAttributes(object:THREE.Object3D):AnatomyAttributes{
   const stored=object.userData.labAnatomy;
   const base=emptyAnatomyAttributes(object.name);
   if(stored&&typeof stored==='object'){
+    const v=stored as Record<string,unknown>;
+    if(v.schema==='lab.anatomy/1')base.schema='lab.anatomy/1';
+    if(typeof v.notes==='string')base.notes=v.notes.slice(0,2000);
+    if(v.appearance&&typeof v.appearance==='object')base.appearance=v.appearance as AnatomyAttributes['appearance'];
+    if(v.permissions&&typeof v.permissions==='object')base.permissions=v.permissions as AnatomyAttributes['permissions'];
+    if(v.editable&&typeof v.editable==='object')base.permissions=v.editable as AnatomyAttributes['permissions'];
+    if(typeof v.id==='string'&&!v.structureId)base.structureId=v.id;
+    if(typeof v.label==='string'&&!v.name)base.name=v.label;
     for(const field of fields){const value=(stored as Record<string,unknown>)[field];if(typeof value==='string')base[field]=value.slice(0,2000)}
     if(typeof (stored as Record<string,unknown>).editable==='boolean')base.editable=(stored as Record<string,boolean>).editable;
   }
@@ -26,7 +38,8 @@ export function writeAnatomyAttributes(object:THREE.Object3D,patch:Partial<Anato
   if(!next.editable)throw new Error('Los atributos de esta estructura están bloqueados');
   for(const field of fields){const value=patch[field];if(typeof value==='string')next[field]=value.slice(0,2000)}
   if(typeof patch.editable==='boolean')next.editable=patch.editable;
-  object.userData.labAnatomy=next;
+  const old=object.userData.labAnatomy && typeof object.userData.labAnatomy==='object' ? object.userData.labAnatomy : {};
+  object.userData.labAnatomy={...old,...next,schema:'lab.anatomy/1',id:next.structureId,label:next.name,editable:next.permissions??next.editable};
   if(typeof patch.name==='string')object.name=next.name;
   return next;
 }
