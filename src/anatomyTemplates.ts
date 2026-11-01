@@ -28,10 +28,21 @@ export function createAnatomyTemplate(kind:AnatomyKind):THREE.Group{
      for(let i=0;i<5;i++)ellipsoid(cranium,'Diente superior '+side+' '+i,side*(.08+i*.095),1.11,.66-i*.012,.048,.075,.06);
    }
    ellipsoid(cranium,'Hueso nasal',0,1.52,.72,.13,.24,.16);
+   // Additional independent educational landmarks; intentionally not clinical anatomy.
+   for(const side of [-1,1]){
+     ellipsoid(cranium,'Temporal '+side,side*.61,1.57,-.03,.17,.39,.39);
+     ellipsoid(cranium,'Parietal '+side,side*.35,2.13,-.12,.39,.37,.47);
+     ellipsoid(cranium,'Apófisis mastoides '+side,side*.59,1.19,-.13,.13,.2,.15);
+     ellipsoid(cranium,'Arco cigomático posterior '+side,side*.65,1.43,.23,.14,.095,.31);
+     ellipsoid(cranium,'Conducto auditivo externo '+side,side*.735,1.51,-.07,.035,.1,.11,joint);
+   }
+   ellipsoid(cranium,'Apertura nasal',0,1.38,.765,.105,.17,.035,joint);
+   ellipsoid(cranium,'Espina nasal anterior',0,1.24,.76,.055,.075,.065);
+   ellipsoid(cranium,'Protuberancia occipital',0,1.57,-.62,.17,.13,.07);
    const jaw=new THREE.Group();jaw.name='02 · Mandíbula (pieza separada)';jaw.position.set(0,1.1,0);root.add(jaw);
    ellipsoid(jaw,'Cuerpo mandibular',0,-.13,.42,.55,.15,.3);
    for(const side of [-1,1]){link(jaw,'Rama mandibular '+side,new THREE.Vector3(side*.51,-.1,.34),new THREE.Vector3(side*.57,.32,.1),.11);for(let i=0;i<5;i++)ellipsoid(jaw,'Diente inferior '+side+' '+i,side*(.08+i*.095),.01,.65-i*.012,.047,.068,.05)}
-   root.userData.editableParts=['01 · Cráneo / bóveda','02 · Mandíbula (pieza separada)'];
+   root.userData.editableParts=['01 · Cráneo / bóveda','02 · Mandíbula (pieza separada)','Temporales y parietales','Dientes individuales','Referencias nasales y auditivas'];
  }else if(kind==='hand'){
    const palm=new THREE.Group();palm.name='01 · Palma';root.add(palm);
    ellipsoid(palm,'Metacarpo',0,.68,0,.48,.62,.17,skin);
