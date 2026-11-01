@@ -102,3 +102,6 @@ html,body,#root{height:100%;min-height:0;overflow:hidden}
 .app>.genre-menu button:hover{background:#4b565b;border-color:var(--ui-accent)}
 .app button:disabled{cursor:not-allowed}
 @media(prefers-reduced-motion:reduce){.app>.workspace .tools button{transition:none}}
+
+/* Drag-and-drop indicator overlays the viewport; it never consumes layout space. */
+.app>.workspace>main .genre-drop-overlay{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#19232bd9;border:3px dashed #c3a04f;color:#f5e4b8;font-size:clamp(13px,2vw,20px);font-weight:700;letter-spacing:.025em;pointer-events:none}
