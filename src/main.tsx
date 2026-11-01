@@ -24,6 +24,7 @@ import {exportDcc,downloadDcc,type ExportFormat} from './dccExporter';
 import {readModelFile,registerAssetRenderer,triangleCount,disposeModel,type AssetProgress} from './heavyModelLoader';
 import {createAnatomyTemplate,type AnatomyKind} from './anatomyTemplates';
 import {anatomyCatalog,type AnatomyCatalogEntry} from './anatomyCatalog';
+import {prepareAnatomyForLab} from './anatomyInterop';
 import {readAnatomyAttributes,writeAnatomyAttributes,type AnatomyAttributes} from './anatomyMetadata';
 import {assetAnimationClips,sceneAnimationClips} from './rigAnimation';
 import {ImportedAnimation} from './ImportedAnimation';
@@ -217,6 +218,7 @@ function App(){
       setAssetProgress({phase:'decoding',percent:100});
       const id=Math.max(Date.now(),...assets.map(a=>a.id+1));
       const asset=await loadAsset(buffer,file.name,id);
+      prepareAnatomyForLab(asset.object,file.name);
       setAssets(prev=>[...prev,asset]);
       const triangles=triangleCount(asset.object);
       if(triangles>200000)setProjectNotice('Modelo pesado: '+triangles.toLocaleString('es-CL')+' triángulos. Usa LOD u optimización remota para mejorar el rendimiento.');
