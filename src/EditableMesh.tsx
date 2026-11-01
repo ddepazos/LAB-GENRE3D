@@ -23,6 +23,67 @@ export function faceOperation(data:MeshData,face:number,distance:number,inset=fa
  if(groups){const materialIndex=groups.find(g=>start/3>=g.start&&start/3<g.start+g.count)?.materialIndex??0;groups.push({start:data.positions.length/3,count:18,materialIndex})}
  return {positions:p,uvs,attributes,groups};
 }
+/** Extrude a connected coplanar region without creating internal walls.
+ * The original region becomes the cap; only its outer boundary receives side faces.
+ * Preserves per-corner UVs, custom attributes and material groups.
+ */
+export function extrudeCoplanarRegion(data:MeshData,seedFace:number,distance:number):MeshData {
+ const count=data.positions.length/9;
+ if(!Number.isInteger(seedFace)||seedFace<0||seedFace>=count)throw Error('Cara no válida');
+ if(!Number.isFinite(distance)||Math.abs(distance)<1e-8)throw Error('Indica una distancia de extrusión distinta de cero');
+ const point=(f:number,k:number)=>new THREE.Vector3().fromArray(data.positions,f*9+k*3);
+ const key=(p:THREE.Vector3)=>p.toArray().map(n=>Math.round(n*1e6)).join(',');
+ const faceNormal=(f:number)=>point(f,1).sub(point(f,0)).cross(point(f,2).sub(point(f,0))).normalize();
+ const normal=faceNormal(seedFace),origin=point(seedFace,0),plane=normal.dot(origin);
+ if(normal.lengthSq()<1e-12)throw Error('La cara inicial es degenerada');
+ const edges=new Map<string,{f:number;a:number;b:number}[]>();
+ for(let f=0;f<count;f++)for(let k=0;k<3;k++){
+  const a=k,b=(k+1)%3,ka=key(point(f,a)),kb=key(point(f,b)),id=[ka,kb].sort().join('|');
+  const list=edges.get(id)??[];list.push({f,a,b});edges.set(id,list);
+ }
+ const adjacent=new Map<number,Set<number>>();
+ for(const uses of edges.values())if(uses.length===2){
+  const [a,b]=uses;(adjacent.get(a.f)??(adjacent.set(a.f,new Set()),adjacent.get(a.f)!)).add(b.f);
+  (adjacent.get(b.f)??(adjacent.set(b.f,new Set()),adjacent.get(b.f)!)).add(a.f);
+ }
+ const region=new Set<number>([seedFace]),queue=[seedFace];
+ while(queue.length){const f=queue.shift()!;for(const n of adjacent.get(f)??[]){
+  if(region.has(n)||faceNormal(n).dot(normal)<.9999)continue;
+  if([0,1,2].some(k=>Math.abs(normal.dot(point(n,k))-plane)>1e-5))continue;
+  region.add(n);queue.push(n);
+ }}
+ const boundary:Array<{f:number;a:number;b:number}>=[];
+ for(const uses of edges.values()){
+  const selected=uses.filter(e=>region.has(e.f));
+  if(selected.length===1)boundary.push(selected[0]);
+  if(selected.length>1&&uses.length!==2)throw Error('Región no manifold: no se puede extruir de forma segura');
+ }
+ if(!boundary.length)throw Error('La región no tiene un contorno abierto para extruir');
+ if((count+boundary.length*2)>20000)throw Error('La extrusión supera el límite de 20.000 triángulos');
+ const positions=[...data.positions],uvs=data.uvs?[...data.uvs]:undefined;
+ const attributes=data.attributes?structuredClone(data.attributes):undefined;
+ const groups=data.groups?data.groups.map(g=>({...g})):undefined;
+ const groupMaterial=(f:number)=>data.groups?.find(g=>f*3>=g.start&&f*3<g.start+g.count)?.materialIndex??0;
+ // Append each wall with the same corner attributes as its originating face.
+ const pushCorner=(f:number,k:number,p:THREE.Vector3)=>{
+  positions.push(...p.toArray());
+  if(uvs)uvs.push(data.uvs![f*6+k*2],data.uvs![f*6+k*2+1]);
+  if(attributes)for(const [name,attr] of Object.entries(attributes)){
+   const source=data.attributes![name];attr.values.push(...source.values.slice((f*3+k)*source.itemSize,(f*3+k+1)*source.itemSize));
+  }
+ };
+ for(const {f,a,b} of boundary){
+  const pa=point(f,a),pb=point(f,b),qa=pa.clone().addScaledVector(normal,distance),qb=pb.clone().addScaledVector(normal,distance);
+  const start=positions.length/3;
+  for(const [k,p] of [[a,pa],[b,pb],[b,qb],[a,pa],[b,qb],[a,qa]] as Array<[number,THREE.Vector3]>)pushCorner(f,k,p);
+  if(groups)groups.push({start,count:6,materialIndex:groupMaterial(f)});
+ }
+ // Move all cap corners only after the side walls have been generated.
+ for(const f of region)for(let k=0;k<3;k++){
+  const i=f*9+k*3;positions[i]+=normal.x*distance;positions[i+1]+=normal.y*distance;positions[i+2]+=normal.z*distance;
+ }
+ return {positions,uvs,attributes,groups};
+}
 /** Planar chamfer of a closed convex supporting edge. Reject diagonals and open/concave edges. */
 export function bevelEdge(data:MeshData,edge:[number,number],width:number):MeshData {
  const vertex=(i:number)=>new THREE.Vector3().fromArray(data.positions,i*3);
