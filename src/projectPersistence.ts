@@ -1,6 +1,6 @@
 import type {ClipLayer} from './animationLayers';
 import * as THREE from 'three';
-import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {decodeCompressedGlb} from './heavyModelLoader';
 import type {HandSnapshot} from './HandLab';
 import type {CharacterSnapshot} from './CharacterLab';
 import {type MeshData,geometryData,setMeshData} from './meshData';
@@ -63,7 +63,7 @@ function checkGlb(buffer:ArrayBuffer){
  for(const entry of [...(doc.buffers??[]),...(doc.images??[])])if(entry.uri&&!String(entry.uri).startsWith('data:'))fail('El GLB debe contener sus recursos; no se admiten enlaces externos');
 }
 export async function loadAsset(buffer:ArrayBuffer,name:string,assetId:number):Promise<ImportedAsset>{
- checkGlb(buffer);const gltf=await new GLTFLoader().parseAsync(buffer,'');
+ checkGlb(buffer);const gltf=await decodeCompressedGlb(buffer);
  const bones:THREE.Bone[]=[],morphs:ImportedAsset['morphs']=[];
  gltf.scene.traverse(node=>{if((node as THREE.Bone).isBone)bones.push(node as THREE.Bone);if((node as THREE.Mesh).isMesh){const mesh=node as THREE.Mesh;for(const [name,index] of Object.entries(mesh.morphTargetDictionary??{}))morphs.push({name,mesh,index})}});
  return {id:assetId,name,object:gltf.scene,sourceGlb:encodeGlb(buffer),clips:gltf.animations,visible:true,position:[0,0,0],rotation:[0,0,0],scale:[1,1,1],bones,morphs,boneCount:bones.length,morphCount:morphs.length,restRotations:bones.map(b=>[b.rotation.x,b.rotation.y,b.rotation.z]),rigKeys:[]};
