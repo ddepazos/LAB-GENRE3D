@@ -62,14 +62,31 @@ function UnusedGeometry({shape,segments=24}:{shape:Shape;segments?:number}) {
     default: return <boxGeometry args={[1.5,1.5,1.5]}/>;
   }
 }
+/** Provide a safe planar UV fallback for edited meshes whose UV data was lost. */
+function ensureMaterialUV(geometry:THREE.BufferGeometry){
+  if(geometry.getAttribute('uv'))return;
+  const pos=geometry.getAttribute('position');
+  if(!pos||!pos.count)return;
+  geometry.computeBoundingBox();
+  const box=geometry.boundingBox!;
+  const size=new THREE.Vector3();box.getSize(size);
+  const axes=([0,1,2] as const).sort((a,b)=>size.getComponent(b)-size.getComponent(a));
+  const u=axes[0],v=axes[1];
+  const uv=new Float32Array(pos.count*2);
+  for(let i=0;i<pos.count;i++){
+    uv[i*2]=(pos.getComponent(i,u)-box.min.getComponent(u))/Math.max(size.getComponent(u),1e-6);
+    uv[i*2+1]=(pos.getComponent(i,v)-box.min.getComponent(v))/Math.max(size.getComponent(v),1e-6);
+  }
+  geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+}
 function Object3D({item,selected,mode,onSelect,onTransform,editMode,onGeometry,onFace,onEdge}:{item:Item;selected:boolean;mode:Mode;onSelect:(id:number)=>void;onTransform:(id:number,mesh:THREE.Mesh)=>void;editMode:ComponentMode;onGeometry:(id:number,data:MeshData)=>void;onFace:(face:number)=>void;onEdge:(edge:[number,number])=>void}) {
   const ref=useRef<THREE.Mesh>(null);
   const maps=useProceduralMaps(item.preset??"liso",256);
   if(!item.visible)return null;
   const mesh=<mesh ref={ref} name={item.name} userData={{itemId:item.id}} position={item.position} rotation={item.rotation} scale={item.scale} onClick={(e:ThreeEvent<MouseEvent>)=>{e.stopPropagation();onSelect(item.id)}}>
-    {item.geometry?<bufferGeometry onUpdate={g=>g.computeVertexNormals()}><bufferAttribute attach="attributes-position" args={[new Float32Array(item.geometry.positions),3]}/>{item.geometry.uvs&&<bufferAttribute attach="attributes-uv" args={[new Float32Array(item.geometry.uvs),2]}/>}</bufferGeometry>:<Geometry shape={item.shape} segments={item.segments} offset={item.meshOffset}/>}<meshStandardMaterial color={item.color} metalness={item.metalness??.25} roughness={item.roughness??.5} wireframe={item.wireframe??false} flatShading={item.flatShading??false} map={maps?.color??null} normalMap={maps?.normal??null} normalScale={new THREE.Vector2(.35,.35)}/>
+    {item.geometry?<bufferGeometry onUpdate={g=>{g.computeVertexNormals();ensureMaterialUV(g)}}><bufferAttribute attach="attributes-position" args={[new Float32Array(item.geometry.positions),3]}/>{item.geometry.uvs&&<bufferAttribute attach="attributes-uv" args={[new Float32Array(item.geometry.uvs),2]}/>}</bufferGeometry>:<Geometry shape={item.shape} segments={item.segments} offset={item.meshOffset}/>}<meshStandardMaterial color={item.color} metalness={item.metalness??.25} roughness={item.roughness??.5} wireframe={item.wireframe??false} flatShading={item.flatShading??false} map={maps?.color??null} normalMap={maps?.normal??null} normalScale={new THREE.Vector2(.35,.35)}/>
   </mesh>;
-  if(selected&&editMode!=='object')return <group position={item.position} rotation={item.rotation} scale={item.scale}><mesh><bufferGeometry onUpdate={g=>g.computeVertexNormals()}><bufferAttribute attach="attributes-position" args={[new Float32Array(item.geometry?.positions??[]),3]}/>{item.geometry?.uvs&&<bufferAttribute attach="attributes-uv" args={[new Float32Array(item.geometry.uvs),2]}/>}</bufferGeometry><meshStandardMaterial color={item.color} side={THREE.DoubleSide} metalness={item.metalness??.25} roughness={item.roughness??.5} map={maps?.color??null} normalMap={maps?.normal??null}/></mesh>{item.geometry&&<EditableMesh data={item.geometry} mode={editMode} onChange={d=>onGeometry(item.id,d)} onFace={onFace} onEdge={onEdge}/>}</group>;
+  if(selected&&editMode!=='object')return <group position={item.position} rotation={item.rotation} scale={item.scale}><mesh><bufferGeometry onUpdate={g=>{g.computeVertexNormals();ensureMaterialUV(g)}}><bufferAttribute attach="attributes-position" args={[new Float32Array(item.geometry?.positions??[]),3]}/>{item.geometry?.uvs&&<bufferAttribute attach="attributes-uv" args={[new Float32Array(item.geometry.uvs),2]}/>}</bufferGeometry><meshStandardMaterial color={item.color} side={THREE.DoubleSide} metalness={item.metalness??.25} roughness={item.roughness??.5} map={maps?.color??null} normalMap={maps?.normal??null}/></mesh>{item.geometry&&<EditableMesh data={item.geometry} mode={editMode} onChange={d=>onGeometry(item.id,d)} onFace={onFace} onEdge={onEdge}/>}</group>;
   return selected ? <TransformControls object={ref as React.MutableRefObject<THREE.Object3D>} mode={mode} onMouseUp={()=>{if(ref.current)onTransform(item.id,ref.current)}}>{mesh}</TransformControls> : mesh;
 }
 function ImportedGLB({object,selected,mode,position,rotation,scale,onSelect,onTransform,componentMode=false,componentMesh,onPaint}:{onPaint?:(point:THREE.Vector3)=>void;object:THREE.Group;selected:boolean;mode:Mode;position:[number,number,number];rotation:[number,number,number];scale:[number,number,number];onSelect:(mesh?:THREE.Mesh)=>void;onTransform:(group:THREE.Group)=>void;componentMode?:boolean;componentMesh?:THREE.Mesh}) {
