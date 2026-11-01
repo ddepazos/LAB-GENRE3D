@@ -8,7 +8,7 @@ import type {SceneCamera} from './sceneObjects';
 export function EditorCameraControls({active}:{active:SceneCamera|null}){
  const set=useThree(state=>state.set);
  const initial=useThree(state=>state.camera);
- const editorCamera=useRef<THREE.Camera>(initial);
+ const editorCamera=useRef<THREE.PerspectiveCamera | THREE.OrthographicCamera>(initial);
  const camera=active??editorCamera.current;
  useEffect(()=>{
    if(camera instanceof THREE.PerspectiveCamera||camera instanceof THREE.OrthographicCamera)camera.updateProjectionMatrix();
