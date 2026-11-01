@@ -63,7 +63,19 @@ export function EditableMesh({data,mode,onChange,onFace,onEdge,gizmoScene}:{data
  if(mode==='edge'){let best=Infinity;for(let i=0;i<3;i++){const a=ids[i],b=ids[(i+1)%3],line=new THREE.Line3(new THREE.Vector3().fromArray(data.positions,a*3),new THREE.Vector3().fromArray(data.positions,b*3));const d=line.closestPointToPoint(local,true,new THREE.Vector3()).distanceToSquared(local);if(d<best){best=d;chosen=[a,b]}}}
  if(mode==='edge')onEdge(chosen as [number,number]);
  // Weld coincident corners so moving an edge or vertex does not split UV seams.
- const all:number[]=[];for(let i=0;i<data.positions.length/3;i++)if(chosen.some(j=>new THREE.Vector3().fromArray(data.positions,i*3).distanceToSquared(new THREE.Vector3().fromArray(data.positions,j*3))<1e-12))all.push(i);setIndices(all);
+ const all:number[]=[];for(let i=0;i<data.positions.length/3;i++)if(chosen.some(j=>new THREE.Vector3().fromArray(data.positions,i*3).distanceToSquared(new THREE.Vector3().fromArray(data.positions,j*3))<1e-12))all.push(i);
+ // Shift adds components; Ctrl/Cmd toggles them. A normal click replaces selection.
+ // Coincident corners share a selection to prevent tearing at UV seams.
+ const native=e.nativeEvent;
+ const additive=native.shiftKey;
+ const toggle=native.ctrlKey||native.metaKey;
+ setIndices(previous=>{
+   if(!additive&&!toggle)return all;
+   const current=new Set(previous);
+   if(toggle){const remove=all.every(i=>current.has(i));for(const i of all){if(remove)current.delete(i);else current.add(i)}}
+   else for(const i of all)current.add(i);
+   return [...current].sort((a,b)=>a-b);
+ });
  };
  return <group userData={{editorOnly:true}}><mesh ref={ref} geometry={geometry} onClick={pick}><meshBasicMaterial color="#ffbd59" wireframe transparent opacity={.45} depthTest={false}/></mesh>{unique.map(i=><mesh key={i} position={new THREE.Vector3().fromArray(data.positions,i*3)}><sphereGeometry args={[.04,8,8]}/><meshBasicMaterial color="#ff6600" depthTest={false}/></mesh>)}{indices.length>0&&<group ref={handle} position={center}><mesh><sphereGeometry args={[.065,8,8]}/><meshBasicMaterial color="#ffcc55" depthTest={false}/></mesh></group>}{indices.length>0&&createPortal(<TransformControls object={handle as React.MutableRefObject<THREE.Group>} mode="translate" onMouseUp={()=>{if(!handle.current)return;const delta=handle.current.position.clone().sub(center),p=[...data.positions];indices.forEach(i=>{p[i*3]+=delta.x;p[i*3+1]+=delta.y;p[i*3+2]+=delta.z});onChange({...data,positions:p})}}/>,scene)}</group>;
 }
