@@ -11,8 +11,8 @@ try{
  const mapsPath=new URL('../.ui-materialPresets.mjs',import.meta.url);files.push(mapsPath);writeFileSync(mapsPath,ts.transpileModule(readFileSync(new URL('../src/materialPresets.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText);
  const {PbrPanel}=await load('PbrPanel');let applied,resolveApply;let tree;
  await act(async()=>{tree=TestRenderer.create(React.createElement(PbrPanel,{disabled:false,onApply:async material=>{applied=material;await new Promise(resolve=>resolveApply=resolve)}}))});
- const field=label=>tree.root.findAllByType('label').find(n=>n.children[0]===label).findByType('input');
- await act(async()=>tree.root.findByType('select').props.onChange({target:{value:'metal'}}));
+ const field=label=>tree.root.findAllByType('label').find(n=>n.children.some(c=>typeof c==='string' && c.includes(label)))?.findByType('input');
+ await act(async()=>tree.root.findByProps({'aria-label':'Preset PBR'}).props.onChange({target:{value:'metal'}}));
  assert.equal(field('Rugosidad PBR').props.value,.3);assert.equal(field('Metalicidad PBR').props.value,.85);
  await act(async()=>tree.root.findByType('button').props.onClick());
  assert.equal(applied.color.getHexString(),'ffffff');assert(applied.map);assert(applied.normalMap);assert.equal(tree.root.findByType('button').props.disabled,true);

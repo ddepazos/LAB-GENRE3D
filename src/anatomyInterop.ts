@@ -53,7 +53,7 @@ export function prepareAnatomyForLab(root: THREE.Object3D, source = 'imported-gl
       source: String(existing.source || source),
       license: String(existing.license || 'verificar licencia del modelo de origen'),
       attribution: String(existing.attribution || ''),
-      editable: flags,
+      editable: flags as AnatomyEditable['editable'],
       appearance: {
         visible: typeof appearance.visible === 'boolean' ? appearance.visible : node.visible,
         opacity: Number.isFinite(Number(appearance.opacity)) ? Math.min(1,Math.max(0,Number(appearance.opacity))) : opacity,

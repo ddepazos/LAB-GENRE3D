@@ -7,8 +7,13 @@ globalThis.FileReader=class{readAsArrayBuffer(blob){blob.arrayBuffer().then(resu
 globalThis.ProgressEvent=class{constructor(type,init){this.type=type;Object.assign(this,init)}};
 const target=new URL('../.project-test.mjs',import.meta.url);
 const meshDataTarget=new URL('../.mesh-data-test.mjs',import.meta.url);
+const heavyTarget=new URL('../.heavy-model-test.mjs',import.meta.url);
+writeFileSync(heavyTarget,ts.transpileModule(
+  readFileSync(new URL('../src/heavyModelLoader.ts',import.meta.url),'utf8'),
+  {compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}
+).outputText);
 writeFileSync(meshDataTarget,ts.transpileModule(readFileSync(new URL('../src/meshData.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText);
-writeFileSync(target,ts.transpileModule(readFileSync(new URL('../src/projectPersistence.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText.replace(/from ['\"]\.\/meshData['\"]/g,"from './.mesh-data-test.mjs'"));
+writeFileSync(target,ts.transpileModule(readFileSync(new URL('../src/projectPersistence.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText.replace("from './meshData'","from './.mesh-data-test.mjs'").replace("from './heavyModelLoader'","from './.heavy-model-test.mjs'"));
 try{
  const {loadAsset,createProject,openProject}=await import(target.href);
  const geometry=new THREE.BoxGeometry();const count=geometry.attributes.position.count;
@@ -45,4 +50,4 @@ try{
  // Reject external references before GLTFLoader can request network resources.
  const json={asset:{version:'2.0'},buffers:[{byteLength:3,uri:'https://example.invalid/private.bin'}]};let raw=JSON.stringify(json);raw+=' '.repeat((4-raw.length%4)%4);const external=new ArrayBuffer(20+raw.length),view=new DataView(external);[0x46546c67,2,external.byteLength,raw.length,0x4e4f534a].forEach((v,i)=>view.setUint32(i*4,v,true));new Uint8Array(external,20).set(new TextEncoder().encode(raw));await assert.rejects(()=>loadAsset(external,'externo.glb',2),/enlaces externos/);
  console.log('PASS: v3 project roundtrip twice, edited geometry/UV/material, skinned rig, pose, morphs, original clips, rig keys, editor settings, hand/character/facial keyframes, legacy v1 and invalid files');
-}finally{unlinkSync(target);unlinkSync(meshDataTarget)}
+}finally{unlinkSync(target);unlinkSync(meshDataTarget);unlinkSync(heavyTarget)}
