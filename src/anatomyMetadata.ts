@@ -29,7 +29,8 @@ export function readAnatomyAttributes(object:THREE.Object3D):AnatomyAttributes{
     if(typeof v.id==='string'&&!v.structureId)base.structureId=v.id;
     if(typeof v.label==='string'&&!v.name)base.name=v.label;
     for(const field of fields){const value=(stored as Record<string,unknown>)[field];if(typeof value==='string')base[field]=value.slice(0,2000)}
-    if(typeof (stored as Record<string,unknown>).editable==='boolean')base.editable=(stored as Record<string,boolean>).editable;
+    if(typeof v.editable==='boolean')base.editable=v.editable;
+    else if(base.permissions)base.editable=Object.values(base.permissions).some(Boolean);
   }
   return base;
 }
@@ -38,6 +39,9 @@ export function writeAnatomyAttributes(object:THREE.Object3D,patch:Partial<Anato
   if(!next.editable)throw new Error('Los atributos de esta estructura están bloqueados');
   for(const field of fields){const value=patch[field];if(typeof value==='string')next[field]=value.slice(0,2000)}
   if(typeof patch.editable==='boolean')next.editable=patch.editable;
+  if(patch.permissions)next.permissions={...next.permissions,...patch.permissions} as NonNullable<AnatomyAttributes['permissions']>;
+  if(patch.appearance)next.appearance={...next.appearance,...patch.appearance} as NonNullable<AnatomyAttributes['appearance']>;
+  if(typeof patch.notes==='string')next.notes=patch.notes.slice(0,2000);
   const old=object.userData.labAnatomy && typeof object.userData.labAnatomy==='object' ? object.userData.labAnatomy : {};
   object.userData.labAnatomy={...old,...next,schema:'lab.anatomy/1',id:next.structureId,label:next.name,editable:next.permissions??next.editable};
   if(typeof patch.name==='string')object.name=next.name;
