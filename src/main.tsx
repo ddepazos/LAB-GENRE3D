@@ -20,7 +20,8 @@ import {layerDuration} from './animationLayers';
 import {rigMeshCopy,paintWeights,solveIK} from './rigTools';
 import {AlphaCapture,type CaptureFrame} from './AlphaCapture';
 import {captureDimensions,framesForDuration,CAPTURE_SIZES,CAPTURE_MAX_BYTES,type CaptureAspect} from './captureExport';
-import {pngZip} from './pngSequence';
+import {pngZipResponsive} from './pngSequence';
+import {openStreamingZip,type StreamingPngZip} from './streamingPngZip';
 import {settleFrame} from './bakeAnimation';
 import {createRigTemplate} from './rigTemplate';
 import {exportDcc,downloadDcc,type ExportFormat} from './dccExporter';
@@ -201,22 +202,41 @@ function App(){
   const [turnSettings,setTurnSettings]=useState<TurnSettings>({axis:'y',degrees:360,duration:4});
   const [captureLoop,setCaptureLoop]=useState(true);const [captureAutoFrame,setCaptureAutoFrame]=useState(true);const [captureFps,setCaptureFps]=useState(30),[captureAspect,setCaptureAspect]=useState<CaptureAspect>('landscape');const captureCancel=useRef(false);
   const captureFrame=useRef<CaptureFrame|null>(null);const captureReady=useCallback((capture:CaptureFrame|null)=>{captureFrame.current=capture},[]);
-  const [captureBusy,setCaptureBusy]=useState(false),[captureNotice,setCaptureNotice]=useState(''),[captureSize,setCaptureSize]=useState(512),[captureFrames,setCaptureFrames]=useState(30),[captureOutput,setCaptureOutput]=useState<{url:string;name:string;preview:string}|null>(null);
+  const [captureBusy,setCaptureBusy]=useState(false),[captureNotice,setCaptureNotice]=useState(''),[captureSize,setCaptureSize]=useState(512),[captureFrames,setCaptureFrames]=useState(150),[captureOutput,setCaptureOutput]=useState<{url:string;name:string;preview:string}|null>(null);
   useEffect(()=>()=>{if(captureOutput){URL.revokeObjectURL(captureOutput.url);URL.revokeObjectURL(captureOutput.preview)}},[captureOutput]);
   const captureAlpha=async(sequence:boolean)=>{
     if(!captureFrame.current||captureBusy)return;
     const {width,height}=captureDimensions(captureSize,captureAspect);
     const total=sequence?captureFrames:1;
+    const outputName=sequence?'GENRE3D-PNG-RGBA-'+width+'x'+height+'-'+captureFps+'FPS.zip':'GENRE3D-RGBA-'+width+'x'+height+'.png';
+    let zipWriter:StreamingPngZip|null=null;
+    let streamed=false;
+    // In Chrome/Edge, ask for the disk destination as the *first* async operation
+    // in the button click. A 150-frame 4K sequence must not be held in browser RAM.
+    if(sequence&&width*height>2048*1152){
+      try{
+        zipWriter=await openStreamingZip(outputName);
+        if(!zipWriter){
+          setCaptureNotice('Para exportar una secuencia 4K extensa utiliza Chrome o Edge con guardado directo a disco. También puedes exportar a 1920 × 1080.');
+          return;
+        }
+      }catch(error){
+        setCaptureNotice(error instanceof Error&&error.name==='AbortError'?'Guardado 4K cancelado.':'No se pudo abrir el guardado 4K: '+String(error));
+        return;
+      }
+    }
     setCaptureBusy(true);
+    setCaptureOutput(null);
     setPlayAll(false);setRigPlaying(false);setImportedPlaying(false);
-    setCaptureNotice('Preparando exportación alfa…');
+    setCaptureNotice('Preparando exportación · '+total+' fotogramas · '+width+' × '+height+'…');
     captureCancel.current=false;
     const transforms:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion;scale:THREE.Vector3}[]=[];
     assets.forEach(asset=>asset.object.traverse(node=>transforms.push({node,position:node.position.clone(),quaternion:node.quaternion.clone(),scale:node.scale.clone()})));
     const poses=assets.map(a=>({a,quaternions:a.bones.map(b=>b.quaternion.clone()),morphs:a.morphs.map(m=>m.mesh.morphTargetInfluences?.[m.index]??0)}));
     const players:{mixer:THREE.AnimationMixer;duration:number}[]=[];
     try{
-      // Let R3F commit playback=false before another mixer samples the same skeleton.
+      // Give the selected playback controller time to detach before sampling the
+      // same skeleton with the deterministic export mixer.
       await settleFrame();
       const visibleAssets=assets.filter(a=>a.visible);
       for(const asset of visibleAssets){
@@ -234,43 +254,66 @@ function App(){
           mixer.setTime(clipTime);
         });
       };
-      // Stable framing across the full exported motion; never move the editor camera.
+      // Fast conservative bounds: do not read every transformed/skinned vertex
+      // nine times. Box3 precise=true caused the browser to stall on heavy FBX.
       let autoFrameBounds:THREE.Box3|undefined;
       if(captureAutoFrame&&visibleAssets.length){
-        const bounds=new THREE.Box3();
+        const bounds=new THREE.Box3(),bonePosition=new THREE.Vector3();
         const sampleCount=8;
         for(let sample=0;sample<=sampleCount;sample++){
           if(captureCancel.current)throw new Error('Exportación cancelada');
           sampleTime((total-1)/captureFps*sample/sampleCount);
           for(const asset of visibleAssets){
             asset.object.updateWorldMatrix(true,true);
-            bounds.union(new THREE.Box3().setFromObject(asset.object,true));
+            bounds.expandByObject(asset.object,false);
+            // Include animated extremities in the framing even when a skinned
+            // geometry uses a static bounding box.
+            asset.bones.forEach(bone=>bounds.expandByPoint(bone.getWorldPosition(bonePosition)));
           }
+          await settleFrame();
         }
         if(!bounds.isEmpty())autoFrameBounds=bounds;
       }
       let bytes=0,transparentPixels=0;
       const files:{name:string;bytes:Uint8Array}[]=[];
+      let firstFrame:Blob|null=null;
       for(let i=0;i<total;i++){
         if(captureCancel.current)throw new Error('Exportación cancelada');
         sampleTime(sequence?i/captureFps:importedTime);
         await settleFrame();
         const captured=await captureFrame.current!(width,height,{autoFrameBounds});
+        if(i===0)firstFrame=captured.blob;
         const pngBytes=new Uint8Array(await captured.blob.arrayBuffer());
-        bytes+=pngBytes.length;
-        if(bytes>CAPTURE_MAX_BYTES)throw new Error('La secuencia supera 256 MB en memoria. Reduce resolución, duración o fotogramas; para secuencias 4K extensas utilizaremos Blender remoto.');
         transparentPixels=captured.transparentPixels;
-        files.push({name:'frame-'+String(i).padStart(5,'0')+'.png',bytes:pngBytes});
-        setCaptureNotice('Alfa '+(i+1)+' / '+total+' · '+width+' × '+height);
+        if(zipWriter){
+          await zipWriter.add('frame-'+String(i).padStart(5,'0')+'.png',pngBytes);
+        }else{
+          bytes+=pngBytes.length;
+          if(bytes>CAPTURE_MAX_BYTES)throw new Error('Secuencia superior a 256 MB: usa exportación 4K directa al disco o reduce fotogramas/resolución.');
+          files.push({name:'frame-'+String(i).padStart(5,'0')+'.png',bytes:pngBytes});
+        }
+        setCaptureNotice('Exportación alfa '+(i+1)+' / '+total+' · '+width+' × '+height+' · '+(zipWriter?'guardado directo':'memoria temporal'));
       }
-      if(sequence)files.push({name:'GENRE3D-sequence.json',bytes:new TextEncoder().encode(JSON.stringify({source:'LAB GENRE3D',width,height,fps:captureFps,frames:total,duration:total/captureFps,alpha:true,loop:captureLoop,autoFrame:captureAutoFrame,pattern:'frame-%05d.png'},null,2))});
-      const output=sequence?pngZip(files):new Blob([files[0].bytes],{type:'image/png'});
-      const preview=new Blob([files[0].bytes],{type:'image/png'});
-      setCaptureOutput({url:URL.createObjectURL(output),preview:URL.createObjectURL(preview),name:sequence?'GENRE3D-PNG-RGBA-'+width+'x'+height+'-'+captureFps+'FPS.zip':'GENRE3D-RGBA-'+width+'x'+height+'.png'});
-      setCaptureNotice((sequence?'Secuencia PNG RGBA':'PNG RGBA')+' lista · '+total+' fotogramas a '+captureFps+' FPS · '+width+' × '+height+' · '+transparentPixels+' píxeles transparentes en último fotograma');
+      const meta={source:'LAB GENRE3D',width,height,fps:captureFps,frames:total,duration:total/captureFps,alpha:true,loop:captureLoop,autoFrame:captureAutoFrame,pattern:'frame-%05d.png'};
+      const metadata=new TextEncoder().encode(JSON.stringify(meta,null,2));
+      if(zipWriter){
+        await zipWriter.add('GENRE3D-sequence.json',metadata);
+        await zipWriter.close();
+        streamed=true;
+        setCaptureNotice('ZIP 4K guardado en la carpeta elegida · '+total+' PNG RGBA · '+width+' × '+height+' · '+captureFps+' FPS.');
+      }else{
+        if(sequence)files.push({name:'GENRE3D-sequence.json',bytes:metadata});
+        setCaptureNotice('Creando archivo descargable…');
+        const output=sequence?await pngZipResponsive(files):new Blob([files[0].bytes],{type:'image/png'});
+        const preview=firstFrame??new Blob([files[0].bytes],{type:'image/png'});
+        setCaptureOutput({url:URL.createObjectURL(output),preview:URL.createObjectURL(preview),name:outputName});
+        setCaptureNotice((sequence?'Secuencia PNG RGBA':'PNG RGBA')+' lista · '+total+' fotogramas a '+captureFps+' FPS · '+width+' × '+height+' · '+transparentPixels+' píxeles transparentes en último fotograma');
+      }
     }catch(error){
+      if(zipWriter&&!streamed)try{await zipWriter.abort()}catch{ /* user may have closed the file picker */ }
       setCaptureNotice('Error alfa: '+(error instanceof Error?error.message:String(error)));
     }finally{
+      captureFrame.current?.dispose?.();
       players.forEach(({mixer})=>{mixer.stopAllAction();mixer.uncacheRoot(mixer.getRoot())});
       transforms.forEach(({node,position,quaternion,scale})=>{node.position.copy(position);node.quaternion.copy(quaternion);node.scale.copy(scale)});
       poses.forEach(({a,quaternions,morphs})=>{a.bones.forEach((bone,i)=>bone.quaternion.copy(quaternions[i]));a.morphs.forEach((m,i)=>{if(m.mesh.morphTargetInfluences)m.mesh.morphTargetInfluences[m.index]=morphs[i]})});
@@ -689,9 +732,9 @@ menuOpen==="Exportar"?<><button onClick={()=>{void exportGlb();setMenuOpen(null)
 <label><input type="checkbox" checked={captureAutoFrame} onChange={e=>setCaptureAutoFrame(e.target.checked)}/> Autoencuadrar movimiento en la exportación</label>
 <button disabled={captureBusy||handOpen||!!library} onClick={()=>void captureAlpha(false)}>PNG transparente de escena</button>
 <label><input type="checkbox" checked={captureLoop} onChange={e=>setCaptureLoop(e.target.checked)}/> Bucle de animación (repetir clip)</label>
-<button disabled={captureBusy||handOpen||!!library} onClick={()=>void captureAlpha(true)}>Secuencia PNG con alfa (ZIP)</button>
+<button disabled={captureBusy||handOpen||!!library} onClick={()=>void captureAlpha(true)}>{captureSize===3840?'Secuencia PNG 4K → guardar ZIP en disco':'Secuencia PNG con alfa (ZIP)'}</button>
 <button disabled={!captureBusy} onClick={()=>{captureCancel.current=true}}>Cancelar exportación alfa</button>
-<small>Duración de salida: {captureFrames} fotogramas a {captureFps} FPS = {(captureFrames/captureFps).toFixed(2)} s · máximo 256 MB. El 4K requiere GPU compatible y puede consumir mucha memoria; para secuencias largas usaremos Blender remoto.</small>
+<small>Duración de salida: {captureFrames} fotogramas a {captureFps} FPS = {(captureFrames/captureFps).toFixed(2)} s. El preset inicial es 150 (5 s a 30 FPS); «Usar duración completa del clip» lo ajusta al tiempo real (por ejemplo 107 / 3,57 s). Si el clip es más corto, activa Bucle para completar 5 s. En 4K el ZIP se escribe progresivamente en el disco para evitar superar la memoria del navegador.</small>
 <p role="status">{captureNotice}</p>{captureOutput&&<><img src={captureOutput.preview} alt="Vista previa alfa" style={{maxWidth:'100%',background:'repeating-conic-gradient(#666 0% 25%,#333 0% 50%) 0 0 / 16px 16px'}}/><a href={captureOutput.url} download={captureOutput.name}>Descargar {captureOutput.name}</a></>}
 <small>Antialiasing por multisampling cuando la GPU lo permite. La cámara de exportación puede autoencuadrar el modelo sin mover tu vista de trabajo. Un render 4K no añade detalles a texturas de baja resolución.</small>
 <h3>CREAR RIG LINEAL</h3><label>Huesos nuevos<input type="number" min="2" max="12" value={rigBoneCount} onChange={e=>setRigBoneCount(Math.max(2,Math.min(12,Math.round(Number(e.target.value)))))}/></label><label>Eje del rig<select aria-label="Eje del rig" value={rigAxis} onChange={e=>setRigAxis(e.target.value as 'x'|'y'|'z')}>{['x','y','z'].map(axis=><option key={axis}>{axis}</option>)}</select></label><button disabled={!currentPart||exportingGlb} onClick={()=>void createRigCopy()}>Crear huesos y pesos en copia</button><small>Selecciona una submalla GLB estática. Se crea una cadena lineal; no es autorig humano.</small><h3>RIGGING EXPERIMENTAL</h3><button disabled={projectBusy||blenderBusy||exportingGlb} onClick={()=>void addRigTemplate()}>+ Brazo anatómico con rig básico</button><div className="shapes"><button onClick={()=>{setHandOpen(v=>!v);setLibrary(null)}}>{handOpen?"← Volver al editor":"✋ Mano articulada"}</button></div><div className="hint">Gizmos y órbita con mouse. Los módulos de rigging y animación se incorporarán por etapas.</div></aside>
