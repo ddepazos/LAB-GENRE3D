@@ -28,3 +28,4 @@ jobs:
           node tests/playback-mode-exclusivity.mjs
           node tests/timeline-view.mjs
           node tests/capture-export.mjs
+          node tests/fbx-import.mjs
