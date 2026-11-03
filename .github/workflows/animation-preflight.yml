@@ -1,7 +1,7 @@
 name: Genre3D - animation preflight
 on:
   push:
-    branches: ['fix/animacion-modos-exclusivos-20261103']
+    branches: ['fix/animacion-modos-exclusivos-20261103', 'fix/exportacion-4k-no-bloquear-20261103']
   workflow_dispatch:
 jobs:
   validate:
@@ -28,6 +28,7 @@ jobs:
           node tests/playback-mode-exclusivity.mjs
           node tests/timeline-view.mjs
           node tests/capture-export.mjs
+          node tests/streaming-png-zip.mjs
           node tests/fbx-import.mjs
           python tests/atlas-retirement.py
       - name: Existing modeling, rig, materials and project regressions
