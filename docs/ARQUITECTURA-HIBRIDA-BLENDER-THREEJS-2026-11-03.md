@@ -176,6 +176,7 @@ Los valores anteriores son **ilustrativos**. El contrato de interoperabilidad LA
 
 ## 12. Archivos relacionados
 
+- [docs/MOTOR-PYTHON-WEB-AUTOMATIZACION-2026-11-03.md](./MOTOR-PYTHON-WEB-AUTOMATIZACION-2026-11-03.md): decisión técnica para ofrecer automatización Python desde la web, reutilizando bpy/BMesh de Blender mediante un servicio aislado, una API segura y un futuro panel de recetas; implementación pendiente.
 - [docs/BLENDER-BRIDGE.md](./BLENDER-BRIDGE.md): estado y límites del puente real ya desplegado.
 - [docs/LAB_CREATIVE_SUITE_INTEROPERABILIDAD.md](./LAB_CREATIVE_SUITE_INTEROPERABILIDAD.md): contrato de intercambio previsto con LAB Studio.
 - [docs/EDICION-MALLA-2026-10-30.md](./EDICION-MALLA-2026-10-30.md): antecedentes de edición de mallas.
