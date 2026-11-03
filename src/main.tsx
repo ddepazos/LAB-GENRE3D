@@ -19,6 +19,7 @@ import {createOrbitModel} from './orbitModel';
 import {layerDuration} from './animationLayers';
 import {rigMeshCopy,paintWeights,solveIK} from './rigTools';
 import {AlphaCapture,type CaptureFrame} from './AlphaCapture';
+import {captureDimensions,framesForDuration,CAPTURE_SIZES,CAPTURE_MAX_BYTES,type CaptureAspect} from './captureExport';
 import {pngZip} from './pngSequence';
 import {settleFrame} from './bakeAnimation';
 import {createRigTemplate} from './rigTemplate';
@@ -197,22 +198,83 @@ function App(){
   const [pbrOpen,setPbrOpen]=useState(false),[objectTimelineOpen,setObjectTimelineOpen]=useState(false);
   const [scriptsOpen,setScriptsOpen]=useState(false),[boneGizmo,setBoneGizmo]=useState(false);
   const [turnSettings,setTurnSettings]=useState<TurnSettings>({axis:'y',degrees:360,duration:4});
-  const [captureLoop,setCaptureLoop]=useState(true);const [captureFps,setCaptureFps]=useState(30),[captureAspect,setCaptureAspect]=useState('square');const captureCancel=useRef(false);
+  const [captureLoop,setCaptureLoop]=useState(true);const [captureAutoFrame,setCaptureAutoFrame]=useState(true);const [captureFps,setCaptureFps]=useState(30),[captureAspect,setCaptureAspect]=useState<CaptureAspect>('landscape');const captureCancel=useRef(false);
   const captureFrame=useRef<CaptureFrame|null>(null);const captureReady=useCallback((capture:CaptureFrame|null)=>{captureFrame.current=capture},[]);
   const [captureBusy,setCaptureBusy]=useState(false),[captureNotice,setCaptureNotice]=useState(''),[captureSize,setCaptureSize]=useState(512),[captureFrames,setCaptureFrames]=useState(30),[captureOutput,setCaptureOutput]=useState<{url:string;name:string;preview:string}|null>(null);
   useEffect(()=>()=>{if(captureOutput){URL.revokeObjectURL(captureOutput.url);URL.revokeObjectURL(captureOutput.preview)}},[captureOutput]);
   const captureAlpha=async(sequence:boolean)=>{
-    if(!captureFrame.current||captureBusy)return;setCaptureBusy(true);setPlayAll(false);setCaptureNotice('Preparando alfa…');captureCancel.current=false;setRigPlaying(false);setImportedPlaying(false);
-    const transforms: {node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion;scale:THREE.Vector3}[]=[];assets.forEach(a=>a.object.traverse(node=>transforms.push({node,position:node.position.clone(),quaternion:node.quaternion.clone(),scale:node.scale.clone()})));
+    if(!captureFrame.current||captureBusy)return;
+    const {width,height}=captureDimensions(captureSize,captureAspect);
+    const total=sequence?captureFrames:1;
+    setCaptureBusy(true);
+    setPlayAll(false);setRigPlaying(false);setImportedPlaying(false);
+    setCaptureNotice('Preparando exportación alfa…');
+    captureCancel.current=false;
+    const transforms:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion;scale:THREE.Vector3}[]=[];
+    assets.forEach(asset=>asset.object.traverse(node=>transforms.push({node,position:node.position.clone(),quaternion:node.quaternion.clone(),scale:node.scale.clone()})));
     const poses=assets.map(a=>({a,quaternions:a.bones.map(b=>b.quaternion.clone()),morphs:a.morphs.map(m=>m.mesh.morphTargetInfluences?.[m.index]??0)}));
     const players:{mixer:THREE.AnimationMixer;duration:number}[]=[];
-    try{for(const a of assets.filter(a=>a.visible)){const clips=assetAnimationClips(a);if(clips[0]){const mixer=new THREE.AnimationMixer(a.object);const action=mixer.clipAction(clips[a.id===selectedAsset?Math.min(importedClipIndex,clips.length-1):0]);action.setLoop(THREE.LoopOnce,1);action.clampWhenFinished=true;action.play();players.push({mixer,duration:action.getClip().duration})}}
-      let transparentPixels=0;const files:{name:string;bytes:Uint8Array}[]=[];const total=sequence?captureFrames:1;
-      let bytes=0;const width=captureAspect==='portrait'?Math.round(captureSize*9/16):captureSize,height=captureAspect==='landscape'?Math.round(captureSize*9/16):captureSize;
-      for(let i=0;i<total;i++){if(captureCancel.current)throw new Error('Exportación cancelada');const time=sequence?i/captureFps:importedTime;players.forEach(({mixer,duration})=>mixer.setTime(captureLoop&&sequence&&duration>0?time%duration:time));await settleFrame();const captured=await captureFrame.current!(width,height);const blob=captured.blob;bytes+=blob.size;if(bytes>256*1024*1024)throw new Error('La secuencia supera 256 MB. Reduce resolución o duración.');transparentPixels=captured.transparentPixels;files.push({name:'frame-'+String(i).padStart(5,'0')+'.png',bytes:new Uint8Array(await blob.arrayBuffer())});setCaptureNotice('Alfa '+(i+1)+' / '+total)}
-      if(sequence)files.push({name:'GENRE3D-sequence.json',bytes:new TextEncoder().encode(JSON.stringify({source:'LAB GENRE3D',width,height,fps:captureFps,frames:total,duration:total/captureFps,alpha:true,loop:captureLoop,pattern:'frame-%05d.png'},null,2))});
-      const output=sequence?pngZip(files):new Blob([files[0].bytes],{type:'image/png'});setCaptureOutput({url:URL.createObjectURL(output),preview:URL.createObjectURL(new Blob([files[0].bytes],{type:'image/png'})),name:sequence?'GENRE3D-PNG-RGBA-'+captureFps+'FPS.zip':'GENRE3D-RGBA.png'});setCaptureNotice(sequence?'Secuencia PNG RGBA lista · '+captureFps+' FPS':'PNG RGBA listo');setCaptureNotice(p=>p+' · '+width+' × '+height+' · '+transparentPixels+' píxeles transparentes en último fotograma');
-    }catch(error){setCaptureNotice('Error alfa: '+String(error))}finally{players.forEach(({mixer})=>{mixer.stopAllAction();mixer.uncacheRoot(mixer.getRoot())});transforms.forEach(({node,position,quaternion,scale})=>{node.position.copy(position);node.quaternion.copy(quaternion);node.scale.copy(scale)});poses.forEach(({a,quaternions,morphs})=>{a.bones.forEach((b,i)=>b.quaternion.copy(quaternions[i]));a.morphs.forEach((m,i)=>{if(m.mesh.morphTargetInfluences)m.mesh.morphTargetInfluences[m.index]=morphs[i]})});setCaptureBusy(false);setRigRevision(v=>v+1)}
+    try{
+      // Let R3F commit playback=false before another mixer samples the same skeleton.
+      await settleFrame();
+      const visibleAssets=assets.filter(a=>a.visible);
+      for(const asset of visibleAssets){
+        const clips=assetAnimationClips(asset);
+        if(!clips.length)continue;
+        const index=asset.id===selectedAsset?Math.min(importedClipIndex,clips.length-1):0;
+        const mixer=new THREE.AnimationMixer(asset.object);
+        const action=mixer.clipAction(clips[index]);
+        action.setLoop(THREE.LoopOnce,1);action.clampWhenFinished=true;action.play();
+        players.push({mixer,duration:action.getClip().duration});
+      }
+      const sampleTime=(seconds:number)=>{
+        players.forEach(({mixer,duration})=>{
+          const clipTime=captureLoop&&sequence&&duration>0?seconds%duration:Math.min(duration,seconds);
+          mixer.setTime(clipTime);
+        });
+      };
+      // Stable framing across the full exported motion; never move the editor camera.
+      let autoFrameBounds:THREE.Box3|undefined;
+      if(captureAutoFrame&&visibleAssets.length){
+        const bounds=new THREE.Box3();
+        const sampleCount=8;
+        for(let sample=0;sample<=sampleCount;sample++){
+          if(captureCancel.current)throw new Error('Exportación cancelada');
+          sampleTime((total-1)/captureFps*sample/sampleCount);
+          for(const asset of visibleAssets){
+            asset.object.updateWorldMatrix(true,true);
+            bounds.union(new THREE.Box3().setFromObject(asset.object,true));
+          }
+        }
+        if(!bounds.isEmpty())autoFrameBounds=bounds;
+      }
+      let bytes=0,transparentPixels=0;
+      const files:{name:string;bytes:Uint8Array}[]=[];
+      for(let i=0;i<total;i++){
+        if(captureCancel.current)throw new Error('Exportación cancelada');
+        sampleTime(sequence?i/captureFps:importedTime);
+        await settleFrame();
+        const captured=await captureFrame.current!(width,height,{autoFrameBounds});
+        const pngBytes=new Uint8Array(await captured.blob.arrayBuffer());
+        bytes+=pngBytes.length;
+        if(bytes>CAPTURE_MAX_BYTES)throw new Error('La secuencia supera 256 MB en memoria. Reduce resolución, duración o fotogramas; para secuencias 4K extensas utilizaremos Blender remoto.');
+        transparentPixels=captured.transparentPixels;
+        files.push({name:'frame-'+String(i).padStart(5,'0')+'.png',bytes:pngBytes});
+        setCaptureNotice('Alfa '+(i+1)+' / '+total+' · '+width+' × '+height);
+      }
+      if(sequence)files.push({name:'GENRE3D-sequence.json',bytes:new TextEncoder().encode(JSON.stringify({source:'LAB GENRE3D',width,height,fps:captureFps,frames:total,duration:total/captureFps,alpha:true,loop:captureLoop,autoFrame:captureAutoFrame,pattern:'frame-%05d.png'},null,2))});
+      const output=sequence?pngZip(files):new Blob([files[0].bytes],{type:'image/png'});
+      const preview=new Blob([files[0].bytes],{type:'image/png'});
+      setCaptureOutput({url:URL.createObjectURL(output),preview:URL.createObjectURL(preview),name:sequence?'GENRE3D-PNG-RGBA-'+width+'x'+height+'-'+captureFps+'FPS.zip':'GENRE3D-RGBA-'+width+'x'+height+'.png'});
+      setCaptureNotice((sequence?'Secuencia PNG RGBA':'PNG RGBA')+' lista · '+total+' fotogramas a '+captureFps+' FPS · '+width+' × '+height+' · '+transparentPixels+' píxeles transparentes en último fotograma');
+    }catch(error){
+      setCaptureNotice('Error alfa: '+(error instanceof Error?error.message:String(error)));
+    }finally{
+      players.forEach(({mixer})=>{mixer.stopAllAction();mixer.uncacheRoot(mixer.getRoot())});
+      transforms.forEach(({node,position,quaternion,scale})=>{node.position.copy(position);node.quaternion.copy(quaternion);node.scale.copy(scale)});
+      poses.forEach(({a,quaternions,morphs})=>{a.bones.forEach((bone,i)=>bone.quaternion.copy(quaternions[i]));a.morphs.forEach((m,i)=>{if(m.mesh.morphTargetInfluences)m.mesh.morphTargetInfluences[m.index]=morphs[i]})});
+      setCaptureBusy(false);setRigRevision(v=>v+1);
+    }
   };
   const exportGroup=useRef<THREE.Group>(null);
   const [sceneNodes,setSceneNodes]=useState<THREE.Object3D[]>([]);
