@@ -17,6 +17,24 @@ export function animatedCopy(source:THREE.Object3D,clips:THREE.AnimationClip[],s
  const originals:THREE.Object3D[]=[],copies:THREE.Object3D[]=[];source.traverse(n=>originals.push(n));copy.traverse(n=>copies.push(n));
  const mapping=new Map(originals.map((n,i)=>[n.uuid,copies[i].uuid]));
  const clip=turnClip(pivot,settings);
- if(clips[0])for(const sourceTrack of clips[0].tracks){const track=sourceTrack.clone(),parsed=THREE.PropertyBinding.parseTrackName(track.name),target=THREE.PropertyBinding.findNode(source,parsed.nodeName);if(!(target instanceof THREE.Object3D)||parsed.objectName)throw new Error('Pista no compatible: '+track.name);track.name=mapping.get(target.uuid)+'.'+parsed.propertyName+(parsed.propertyIndex!==undefined?'['+parsed.propertyIndex+']':'');clip.tracks.push(track)}
- return {root,clip};
+ const preservedClips=clips.map(original=>{
+   const mapped=original.clone();
+   mapped.tracks=original.tracks.map(sourceTrack=>{
+     const track=sourceTrack.clone();
+     const parsed=THREE.PropertyBinding.parseTrackName(track.name);
+     const target=THREE.PropertyBinding.findNode(source,parsed.nodeName);
+     if(!(target instanceof THREE.Object3D)||parsed.objectName)throw new Error('Pista no compatible: '+track.name);
+     const newId=mapping.get(target.uuid);
+     if(!newId)throw new Error('No se pudo conservar el destino animado de '+track.name);
+     track.name=newId+'.'+parsed.propertyName+(parsed.propertyIndex!==undefined?'['+parsed.propertyIndex+']':'');
+     return track;
+   });
+   return mapped;
+ });
+ // First clip is the full turn *combined* with the source animation.
+ // LAB Studio currently loads the first GLB clip; keep original clips as
+ // individually selectable alternatives for future editors.
+ if(preservedClips[0])clip.tracks.push(...preservedClips[0].tracks.map(track=>track.clone()));
+ clip.name='Giro_LAB_'+settings.degrees+'_'+settings.axis+'_'+settings.duration+'s';
+ return {root,clip,preservedClips};
 }
