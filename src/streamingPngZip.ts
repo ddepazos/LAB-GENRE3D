@@ -91,6 +91,6 @@ export async function openStreamingZip(filename:string):Promise<StreamingPngZip|
   type Picker=(options:{suggestedName:string;types:{description:string;accept:Record<string,string[]>}[]})=>Promise<Handle>;
   const picker=(window as Window & {showSaveFilePicker?:Picker}).showSaveFilePicker;
   if(typeof picker!=='function')return null;
-  const handle=await picker({suggestedName:filename,types:[{description:'Secuencia PNG transparente (ZIP)',accept:{'application/zip':['.zip']}}]});
+  const handle=await picker.call(window,{suggestedName:filename,types:[{description:'Secuencia PNG transparente (ZIP)',accept:{'application/zip':['.zip']}}]});
   return new StreamingPngZip(await handle.createWritable());
 }
