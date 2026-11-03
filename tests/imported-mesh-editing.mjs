@@ -6,7 +6,13 @@ import {GLTFExporter} from 'three/examples/jsm/exporters/GLTFExporter.js';
 globalThis.FileReader=class{readAsArrayBuffer(blob){blob.arrayBuffer().then(result=>{this.result=result;this.onloadend?.()})}};
 globalThis.ProgressEvent=class{constructor(type,init){this.type=type;Object.assign(this,init)}};
 const files=['meshData.ts','EditableMesh.tsx','projectPersistence.ts'];const targets=[];
-for(const file of files){const stem=file.replace(/\.tsx?$/,''),target=new URL('../.static-'+stem+'.mjs',import.meta.url);targets.push(target);const source=ts.transpileModule(readFileSync(new URL('../src/'+file,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText.replace(/from ['"]\.\/meshData['"]/g,"from './.static-meshData.mjs'");writeFileSync(target,source)}
+for(const file of files){const stem=file.replace(/\.tsx?$/,''),target=new URL('../.static-'+stem+'.mjs',import.meta.url);targets.push(target);const source=ts.transpileModule(readFileSync(new URL('../src/'+file,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText.replace(/from ['"]\.\/meshData['"]/g,"from './.static-meshData.mjs'").replace(/from ['"]\.\/heavyModelLoader['"]/g,"from './.static-heavyModelLoader.mjs'");writeFileSync(target,source)}
+const heavyTarget=new URL('../.static-heavyModelLoader.mjs',import.meta.url);
+targets.push(heavyTarget);
+writeFileSync(heavyTarget,ts.transpileModule(
+  readFileSync(new URL('../src/heavyModelLoader.ts',import.meta.url),'utf8'),
+  {compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}
+).outputText);
 try{
  const {geometryData,geometryFromData,setMeshData,meshParts,meshEditReason,bakeEditableCopy}=await import(targets[0].href);
  const {faceOperation,bevelEdge}=await import(targets[1].href);
