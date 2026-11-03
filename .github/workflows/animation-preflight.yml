@@ -1,7 +1,7 @@
 name: Genre3D - animation preflight
 on:
   push:
-    branches: ['fix/animacion-modos-exclusivos-20261103', 'fix/exportacion-4k-no-bloquear-20261103']
+    branches: ['fix/animacion-modos-exclusivos-20261103', 'fix/exportacion-4k-no-bloquear-20261103', 'fix/giro-seleccionado-glb-labstudio-20261103']
   workflow_dispatch:
 jobs:
   validate:
@@ -23,6 +23,7 @@ jobs:
           node tests/clip-playback.mjs
           node tests/animation-layers.mjs
           node tests/rig-animation.mjs
+          node tests/giro-selected.mjs
           node tests/imported-animation.mjs
           node tests/bake-animation.mjs
           node tests/playback-mode-exclusivity.mjs
