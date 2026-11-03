@@ -11,3 +11,23 @@ export function pngZip(files:{name:string;bytes:Uint8Array}[]):Blob{
  const end=new Uint8Array(22),e=new DataView(end.buffer);e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,centralSize,true);e.setUint32(16,offset,true);
  return new Blob([...chunks,...central,end] as BlobPart[],{type:'application/zip'});
 }
+
+/** Responsive in-memory ZIP fallback for browsers without disk streaming.
+ * Uses a CRC lookup table and yields between files instead of blocking the UI.
+ * The caller must still enforce a strict total-byte limit.
+ */
+export async function pngZipResponsive(files:{name:string;bytes:Uint8Array}[]):Promise<Blob>{
+  const {StreamingPngZip}=await import('./streamingPngZip');
+  const parts:Uint8Array[]=[];
+  const sink={
+    async write(data:Uint8Array){parts.push(data)},
+    async close(){},
+    async abort(){parts.length=0}
+  };
+  const zip=new StreamingPngZip(sink);
+  try{
+    for(const file of files)await zip.add(file.name,file.bytes);
+    await zip.close();
+    return new Blob(parts as BlobPart[],{type:'application/zip'});
+  }catch(error){await zip.abort();throw error}
+}
