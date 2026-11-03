@@ -1,16 +1,24 @@
 import {useEffect} from 'react';
 import {useThree} from '@react-three/fiber';
 import * as THREE from 'three';
-export type CaptureFrame=(width:number,height?:number)=>Promise<{blob:Blob;transparentPixels:number}>;
+import {frameExportCamera} from './captureExport';
+export type CaptureFrame=(width:number,height?:number,options?:{autoFrameBounds?:THREE.Box3})=>Promise<{blob:Blob;transparentPixels:number}>;
 export function AlphaCapture({onReady}:{onReady:(capture:CaptureFrame|null)=>void}){
  const {gl,scene,camera}=useThree();
- useEffect(()=>{onReady(async (width,height=width)=>{
-  if(![width,height].every(n=>Number.isInteger(n)&&n>=128&&n<=2048))throw new Error('Resolución fuera de rango');
-  const target=new THREE.WebGLRenderTarget(width,height);target.texture.colorSpace=THREE.SRGBColorSpace;
+ useEffect(()=>{onReady(async (width,height=width,options)=>{
+  const webglContext=gl.getContext();
+  const gpuLimit=Math.min(4096,gl.capabilities.maxTextureSize,Number(webglContext.getParameter(webglContext.MAX_RENDERBUFFER_SIZE))||4096);
+  if(![width,height].every(n=>Number.isInteger(n)&&n>=128&&n<=gpuLimit)||width*height>3840*2160)throw new Error('La resolución solicitada excede el límite 4K o la capacidad de tu GPU');
+  const webgl2=webglContext as WebGL2RenderingContext;
+  const samples=typeof webgl2.MAX_SAMPLES==='number'?Math.min(4,Number(webglContext.getParameter(webgl2.MAX_SAMPLES))||0):0;
+  const target=new THREE.WebGLRenderTarget(width,height,{samples,depthBuffer:true,stencilBuffer:false});target.texture.colorSpace=THREE.SRGBColorSpace;
   const oldTarget=gl.getRenderTarget(),alpha=gl.getClearAlpha(),color=gl.getClearColor(new THREE.Color()).clone(),background=scene.background;
   const hidden:THREE.Object3D[]=[];
   scene.traverse(n=>{if(n.visible&&(n.userData.editorOnly||n.type==='GridHelper'||n.type==='SkeletonHelper'||n.type==='TransformControls'||(n as THREE.Object3D&{isTransformControls?:boolean}).isTransformControls||n.name==='InfiniteGrid')){n.visible=false;hidden.push(n)}});
-  const copy=camera.clone();if(copy instanceof THREE.PerspectiveCamera){copy.aspect=width/height;copy.updateProjectionMatrix()}
+  const copy=camera.clone();
+  if(copy instanceof THREE.PerspectiveCamera){copy.aspect=width/height;copy.updateProjectionMatrix()}
+  else if(copy instanceof THREE.OrthographicCamera){const centerX=(copy.left+copy.right)/2,widthOld=copy.right-copy.left;const aspect=width/height;const halfWidth=Math.max(widthOld,(copy.top-copy.bottom)*aspect)/2;copy.left=centerX-halfWidth;copy.right=centerX+halfWidth;copy.updateProjectionMatrix()}
+  if(options?.autoFrameBounds)frameExportCamera(copy,options.autoFrameBounds);
   const pixels=new Uint8Array(width*height*4);
   try{scene.background=null;gl.setClearColor(0x000000,0);gl.setRenderTarget(target);gl.clear();gl.render(scene,copy);gl.readRenderTargetPixels(target,0,0,width,height,pixels)}finally{gl.setRenderTarget(oldTarget);gl.setClearColor(color,alpha);scene.background=background;hidden.forEach(n=>n.visible=true);target.dispose()}
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d');if(!context)throw new Error('Canvas no disponible');const output=context.createImageData(width,height);

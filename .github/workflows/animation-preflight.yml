@@ -1,0 +1,38 @@
+name: Genre3D - animation preflight
+on:
+  push:
+    branches: ['fix/animacion-modos-exclusivos-20261103']
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: TypeScript and Vite
+        run: npm run build
+      - name: Animation playback and export regressions
+        run: |
+          node tests/clip-playback.mjs
+          node tests/animation-layers.mjs
+          node tests/rig-animation.mjs
+          node tests/imported-animation.mjs
+          node tests/bake-animation.mjs
+          node tests/playback-mode-exclusivity.mjs
+          node tests/timeline-view.mjs
+          node tests/capture-export.mjs
+          node tests/fbx-import.mjs
+          python tests/atlas-retirement.py
+      - name: Existing modeling, rig, materials and project regressions
+        run: |
+          npm run test:consolidation
+          node tests/imported-mesh-editing.mjs
+          node tests/orbit-model.mjs
+          node tests/export-downloads.mjs
