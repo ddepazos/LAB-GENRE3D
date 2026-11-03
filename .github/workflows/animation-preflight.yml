@@ -29,3 +29,4 @@ jobs:
           node tests/timeline-view.mjs
           node tests/capture-export.mjs
           node tests/fbx-import.mjs
+          python tests/atlas-retirement.py
