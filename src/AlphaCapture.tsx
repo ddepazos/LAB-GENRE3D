@@ -6,11 +6,11 @@ export type CaptureFrame=(width:number,height?:number,options?:{autoFrameBounds?
 export function AlphaCapture({onReady}:{onReady:(capture:CaptureFrame|null)=>void}){
  const {gl,scene,camera}=useThree();
  useEffect(()=>{onReady(async (width,height=width,options)=>{
-  const context=gl.getContext();
-  const gpuLimit=Math.min(4096,gl.capabilities.maxTextureSize,Number(context.getParameter(context.MAX_RENDERBUFFER_SIZE))||4096);
+  const webglContext=gl.getContext();
+  const gpuLimit=Math.min(4096,gl.capabilities.maxTextureSize,Number(webglContext.getParameter(webglContext.MAX_RENDERBUFFER_SIZE))||4096);
   if(![width,height].every(n=>Number.isInteger(n)&&n>=128&&n<=gpuLimit)||width*height>3840*2160)throw new Error('La resolución solicitada excede el límite 4K o la capacidad de tu GPU');
-  const webgl2=context as WebGL2RenderingContext;
-  const samples=typeof webgl2.MAX_SAMPLES==='number'?Math.min(4,Number(context.getParameter(webgl2.MAX_SAMPLES))||0):0;
+  const webgl2=webglContext as WebGL2RenderingContext;
+  const samples=typeof webgl2.MAX_SAMPLES==='number'?Math.min(4,Number(webglContext.getParameter(webgl2.MAX_SAMPLES))||0):0;
   const target=new THREE.WebGLRenderTarget(width,height,{samples,depthBuffer:true,stencilBuffer:false});target.texture.colorSpace=THREE.SRGBColorSpace;
   const oldTarget=gl.getRenderTarget(),alpha=gl.getClearAlpha(),color=gl.getClearColor(new THREE.Color()).clone(),background=scene.background;
   const hidden:THREE.Object3D[]=[];
