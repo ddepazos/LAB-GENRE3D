@@ -351,6 +351,24 @@ function App(){
     if(scope==='selection'&&!currentAsset){setProjectNotice('Selecciona un GLB en la jerarquía para exportarlo.');return}
     setExportingGlb(true);
     try{
+      if(format==='glb'&&scope==='selection'&&currentAsset){
+        const clips=assetAnimationClips(currentAsset);
+        await exportToLabStudio(currentAsset.object,{
+          name:currentAsset.name.replace(/\\.glb$/i,''),
+          fps:30,
+          clips,
+          onReady:files=>setExportFiles({
+            glb:URL.createObjectURL(files.glb),
+            data:files.glb,
+            manifest:URL.createObjectURL(files.manifest),
+            name:files.name,
+            clips:clips.length,
+            duration:Math.max(0,...clips.map(clip=>clip.duration))
+          })
+        });
+        setProjectNotice('GLB crudo de selección preparado con '+clips.length+' clip(s). Descarga GLB para LAB Studio. Se conservan los datos 3D locales; la transformación externa del objeto es independiente.');
+        return;
+      }
       const scene=exportGroup.current;
       let selectedObject:THREE.Object3D|null=null;
       if(scope==='selection'&&currentAsset){
