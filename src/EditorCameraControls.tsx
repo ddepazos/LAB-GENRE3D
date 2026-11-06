@@ -2,15 +2,20 @@ import React, {useEffect, useRef} from 'react';
 import * as THREE from 'three';
 import {useThree} from '@react-three/fiber';
 import {OrbitControls} from '@react-three/drei';
+import {copyCameraView} from './cameraFraming';
 import type {SceneCamera} from './sceneObjects';
+
+export type CameraActions={align:(target:SceneCamera)=>void;aim:(target:SceneCamera,point:THREE.Vector3)=>void};
 
 /** Camera framing is opt-in; normal editor orbit behavior is unchanged. */
 export function EditorCameraControls({
  active,
+ actions,
  focusBounds,
  focusRevision=0,
 }:{
  active:SceneCamera|null;
+ actions?:React.MutableRefObject<CameraActions|null>;
  focusBounds?:THREE.Box3|null;
  focusRevision?:number;
 }){
@@ -19,6 +24,26 @@ export function EditorCameraControls({
  const editorCamera=useRef<THREE.PerspectiveCamera | THREE.OrthographicCamera>(initial);
  const controls=useRef<React.ElementRef<typeof OrbitControls>>(null);
  const camera=active??editorCamera.current;
+ const size=useThree(state=>state.size);
+ useEffect(()=>{
+  if(camera instanceof THREE.PerspectiveCamera){camera.aspect=size.width/size.height;camera.updateProjectionMatrix()}
+ },[camera,size]);
+ useEffect(()=>{
+  if(!actions)return;
+  actions.current={
+   align(target){copyCameraView(camera,target);target.userData.orbitTarget=controls.current?.target.toArray()},
+   aim(target,point){target.lookAt(point);target.updateMatrixWorld(true);target.userData.orbitTarget=point.toArray();if(target===camera){controls.current?.target.copy(point);controls.current?.update()}}
+  };
+  return()=>{actions.current=null};
+ },[actions,camera]);
+ useEffect(()=>{
+  const orbit=controls.current;if(!orbit)return;
+  const saved=camera.userData.orbitTarget;
+  if(Array.isArray(saved))orbit.target.fromArray(saved);
+  else orbit.target.copy(camera.getWorldPosition(new THREE.Vector3())).addScaledVector(camera.getWorldDirection(new THREE.Vector3()),Math.max(camera.position.length(),1));
+  orbit.update();
+  return()=>{camera.userData.orbitTarget=orbit.target.toArray()};
+ },[camera]);
  useEffect(()=>{
    if(camera instanceof THREE.PerspectiveCamera||camera instanceof THREE.OrthographicCamera)camera.updateProjectionMatrix();
    camera.updateMatrixWorld(true);

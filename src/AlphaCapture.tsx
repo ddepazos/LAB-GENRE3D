@@ -55,7 +55,9 @@ export function AlphaCapture({onReady}:{onReady:(capture:CaptureFrame|null)=>voi
           n.visible=false;hidden.push(n);
         }
       });
+      camera.updateWorldMatrix(true,false);
       const copy=camera.clone();
+      camera.getWorldPosition(copy.position);camera.getWorldQuaternion(copy.quaternion);copy.updateMatrixWorld(true);
       if(copy instanceof THREE.PerspectiveCamera){copy.aspect=width/height;copy.updateProjectionMatrix()}
       else if(copy instanceof THREE.OrthographicCamera){
         const centerX=(copy.left+copy.right)/2,widthOld=copy.right-copy.left;

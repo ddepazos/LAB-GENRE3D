@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const source=readFileSync(new URL('../src/main.tsx',import.meta.url),'utf8');
@@ -20,6 +20,6 @@ const guards=[
   ['selected clip is not mounted during play-all', '!playAll&&importedPlaybackEnabled&&currentAsset']
 ];
 for(const [name,needle] of guards){
- assert(source.includes(needle), 'Missing playback guard: '+name);
+ assert(source.replace(/\s+/g,'').includes(needle.replace(/\s+/g,'')), 'Missing playback guard: '+name);
 }
 console.log('PASS: playback mode exclusivity wiring for selected GLB clips, all clips and rig timeline');
